@@ -160,15 +160,23 @@ export default function DraftPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Check if event is in the past
+  const isPastEvent = formData.start_at ? new Date(formData.start_at) < new Date() : false;
+  
   // Validation checks
   const validationChecks = {
     title: !!formData.title?.trim(),
     start_at: !!formData.start_at,
     city: !!formData.city?.trim(),
     ticket_url: !formData.ticket_url || isValidUrl(formData.ticket_url),
+    future_date: !isPastEvent, // Warning for past events
   };
 
-  const isValid = Object.values(validationChecks).every(Boolean);
+  // Core validation (required for publishing)
+  const coreValidation = validationChecks.title && validationChecks.start_at && validationChecks.city && validationChecks.ticket_url;
+  
+  // Allow publishing past events with warning
+  const isValid = coreValidation;
 
   const getFieldConfidence = (field: string): number | undefined => {
     if (!formData.confidence_json) return undefined;
@@ -461,30 +469,50 @@ export default function DraftPage() {
               <h3 className="mb-3 font-semibold text-foreground">Publishing Checklist</h3>
               <div className="space-y-2">
                 {[
-                  { key: "title", label: "Title is present" },
-                  { key: "start_at", label: "Start date is set" },
-                  { key: "city", label: "City is specified" },
-                  { key: "ticket_url", label: "Ticket URL is valid (if provided)" },
-                ].map(({ key, label }) => (
+                  { key: "title", label: "Title is present", required: true },
+                  { key: "start_at", label: "Start date is set", required: true },
+                  { key: "city", label: "City is specified", required: true },
+                  { key: "ticket_url", label: "Ticket URL is valid (if provided)", required: true },
+                  { key: "future_date", label: "Event is in the future", required: false },
+                ].map(({ key, label, required }) => (
                   <div key={key} className="flex items-center gap-2 text-sm">
                     {validationChecks[key as keyof typeof validationChecks] ? (
                       <CheckCircle2 className="h-4 w-4 text-confidence-high" />
-                    ) : (
+                    ) : required ? (
                       <AlertCircle className="h-4 w-4 text-destructive" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-accent" />
                     )}
                     <span
                       className={cn(
                         validationChecks[key as keyof typeof validationChecks]
                           ? "text-muted-foreground"
-                          : "text-foreground"
+                          : required ? "text-foreground" : "text-accent"
                       )}
                     >
                       {label}
+                      {!required && !validationChecks[key as keyof typeof validationChecks] && " (warning)"}
                     </span>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Past Event Warning */}
+            {isPastEvent && (
+              <div className="rounded-lg border border-accent/50 bg-accent/10 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="mt-0.5 h-5 w-5 text-accent" />
+                  <div>
+                    <h4 className="font-medium text-foreground">This event appears to be in the past</h4>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      The start date ({new Date(formData.start_at!).toLocaleDateString()}) has already passed. 
+                      Please verify the year is correct. You can still publish past events for archival purposes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="flex gap-3 pt-4">

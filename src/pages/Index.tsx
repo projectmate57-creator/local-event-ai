@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Sparkles, Calendar, MapPin, Users } from "lucide-react";
+import { ArrowRight, Sparkles, Users, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/Layout";
 import { EventCard } from "@/components/EventCard";
@@ -9,6 +9,7 @@ import { ChatWidget } from "@/components/ChatWidget";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Event } from "@/lib/types";
+import { AnimatedIcon3D } from "@/components/3d/AnimatedIcon3D";
 
 export default function Index() {
   const navigate = useNavigate();
@@ -38,84 +39,109 @@ export default function Index() {
     <Layout>
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        {/* Background gradient */}
+        {/* Background - subtle geometric pattern */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-          <div className="absolute right-0 top-0 h-[600px] w-[600px] -translate-y-1/4 translate-x-1/4 rounded-full bg-accent/20 blur-3xl" />
-          <div className="absolute left-0 top-1/2 h-[400px] w-[400px] -translate-x-1/4 rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5" />
+          <div className="absolute right-0 top-20 h-[500px] w-[500px] -translate-y-1/4 translate-x-1/4 rounded-full bg-primary/10 blur-[100px]" />
         </div>
 
-        <div className="container mx-auto px-4 pb-24 pt-20">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mx-auto max-w-3xl text-center"
-          >
-            {/* Badge */}
+        <div className="container mx-auto px-4 pb-24 pt-16">
+          <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
+            {/* Left: Text content */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm text-primary"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center lg:text-left"
             >
-              <Sparkles className="h-4 w-4" />
-              AI-Powered Event Discovery
-            </motion.div>
-
-            <h1 className="mb-6 text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              Turn a poster into a{" "}
-              <span className="gradient-text">real event link</span>{" "}
-              in seconds
-            </h1>
-
-            <p className="mb-8 text-lg text-muted-foreground sm:text-xl">
-              Upload your event poster, let AI extract the details, and publish a beautiful
-              event page. Perfect for local meetups, workshops, and community events.
-            </p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
-            >
-              <Button
-                size="lg"
-                onClick={handleUploadClick}
-                className="h-12 px-8 text-base gradient-bg glow-primary"
+              {/* Badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-sm text-foreground"
               >
-                Upload Poster
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Link to="/events">
-                <Button variant="outline" size="lg" className="h-12 px-8 text-base">
-                  Browse Events
+                <Sparkles className="h-4 w-4 text-primary" />
+                AI-Powered Event Discovery
+              </motion.div>
+
+              <h1 className="mb-6 text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+                Turn a poster into a{" "}
+                <span className="text-primary">real event link</span>{" "}
+                in seconds
+              </h1>
+
+              <p className="mb-8 text-lg text-muted-foreground sm:text-xl">
+                Upload your event poster, let AI extract the details, and publish a beautiful
+                event page. Perfect for local meetups, workshops, and community events.
+              </p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="flex flex-col items-center gap-4 sm:flex-row lg:justify-start"
+              >
+                <Button
+                  size="lg"
+                  onClick={handleUploadClick}
+                  className="h-12 px-8 text-base bg-foreground text-background hover:bg-foreground/90"
+                >
+                  Upload Poster
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-              </Link>
+                <Link to="/events">
+                  <Button variant="outline" size="lg" className="h-12 px-8 text-base border-foreground/20">
+                    Browse Events
+                  </Button>
+                </Link>
+              </motion.div>
             </motion.div>
-          </motion.div>
+
+            {/* Right: 3D Icons */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="relative hidden lg:block"
+            >
+              <div className="relative h-[400px] w-full">
+                {/* Calendar icon - large, center-left */}
+                <div className="absolute left-0 top-8 h-48 w-48">
+                  <AnimatedIcon3D type="calendar" className="h-full w-full" />
+                </div>
+                {/* Location icon - medium, center-right */}
+                <div className="absolute right-8 top-16 h-40 w-40">
+                  <AnimatedIcon3D type="location" className="h-full w-full" />
+                </div>
+                {/* Sparkle icon - small, bottom */}
+                <div className="absolute bottom-8 left-1/3 h-32 w-32">
+                  <AnimatedIcon3D type="sparkle" className="h-full w-full" />
+                </div>
+              </div>
+            </motion.div>
+          </div>
 
           {/* Feature highlights */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.6 }}
-            className="mx-auto mt-20 grid max-w-4xl gap-6 sm:grid-cols-3"
+            className="mx-auto mt-24 grid max-w-4xl gap-6 sm:grid-cols-3"
           >
             {[
               {
-                icon: Sparkles,
+                icon: "sparkle" as const,
                 title: "AI Extraction",
                 description: "Our AI reads your poster and extracts all event details automatically",
               },
               {
-                icon: Calendar,
+                icon: "calendar" as const,
                 title: "Instant Pages",
                 description: "Get a beautiful, shareable event page in seconds",
               },
               {
-                icon: Users,
+                icon: "location" as const,
                 title: "Local Focus",
                 description: "Built for tiny local events that bring communities together",
               },
@@ -125,10 +151,10 @@ export default function Index() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 + i * 0.1 }}
-                className="rounded-xl border border-border bg-card p-6 text-center card-shadow"
+                className="group rounded-xl border border-border bg-card p-6 text-center card-shadow transition-all hover:card-shadow-hover"
               >
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                  <feature.icon className="h-6 w-6 text-primary" />
+                <div className="mx-auto mb-4 h-16 w-16">
+                  <AnimatedIcon3D type={feature.icon} className="h-full w-full" />
                 </div>
                 <h3 className="mb-2 font-semibold text-card-foreground">{feature.title}</h3>
                 <p className="text-sm text-muted-foreground">{feature.description}</p>
@@ -177,7 +203,7 @@ export default function Index() {
                 <p className="mb-4 text-muted-foreground">
                   Be the first to create an event!
                 </p>
-                <Button onClick={handleUploadClick} className="gradient-bg">
+                <Button onClick={handleUploadClick} className="bg-foreground text-background hover:bg-foreground/90">
                   Upload a Poster
                 </Button>
               </div>

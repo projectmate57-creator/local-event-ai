@@ -79,9 +79,9 @@ export function ChatWidget() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full gradient-bg shadow-lg glow-primary"
+            className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/30 transition-colors hover:bg-primary/90"
           >
-            <MessageCircle className="h-6 w-6 text-white" />
+            <MessageCircle className="h-6 w-6 text-primary-foreground" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -96,14 +96,14 @@ export function ChatWidget() {
             className="fixed bottom-6 right-6 z-50 flex h-[500px] w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-border px-4 py-3 gradient-bg">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3 bg-primary">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-white" />
-                <h3 className="font-semibold text-white">Find Events</h3>
+                <Sparkles className="h-5 w-5 text-primary-foreground" />
+                <h3 className="font-semibold text-primary-foreground">Find Events</h3>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="rounded-full p-1 text-white/80 hover:bg-white/20 hover:text-white"
+                className="rounded-full p-1 text-primary-foreground/80 transition-colors hover:bg-primary-foreground/20 hover:text-primary-foreground"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -186,7 +186,7 @@ export function ChatWidget() {
                   type="submit"
                   size="icon"
                   disabled={!input.trim() || isLoading}
-                  className="gradient-bg"
+                  className="bg-primary text-primary-foreground shadow-sm transition-all hover:bg-primary/90"
                 >
                   <Send className="h-4 w-4" />
                 </Button>

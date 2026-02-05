@@ -29,7 +29,7 @@ export function Layout({ children }: LayoutProps) {
 
           <nav className="flex items-center gap-1">
             <Link to="/">
-              <Button variant={location.pathname === "/" ? "secondary" : "ghost"} size="sm">
+              <Button variant={location.pathname === "/" ? "secondary" : "ghost"} size="sm" className="transition-all duration-200">
                 Home
               </Button>
             </Link>
@@ -37,8 +37,18 @@ export function Layout({ children }: LayoutProps) {
               <Button
                 variant={location.pathname.startsWith("/events") ? "secondary" : "ghost"}
                 size="sm"
+                className="transition-all duration-200"
               >
                 Events
+              </Button>
+            </Link>
+            <Link to="/contact">
+              <Button
+                variant={location.pathname === "/contact" ? "secondary" : "ghost"}
+                size="sm"
+                className="transition-all duration-200"
+              >
+                Contact
               </Button>
             </Link>
 
@@ -47,7 +57,7 @@ export function Layout({ children }: LayoutProps) {
             <ThemeToggle />
 
             <Link to="/upload">
-              <Button size="sm" className="bg-foreground text-background hover:bg-foreground/90">
+              <Button size="sm" className="shadow-sm transition-all duration-200 hover:shadow-md">
                 <Plus className="mr-1.5 h-4 w-4" />
                 Upload
               </Button>

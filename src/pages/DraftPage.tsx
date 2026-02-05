@@ -213,52 +213,56 @@ export default function DraftPage() {
 
   return (
     <Layout>
-      <section className="container mx-auto px-4 py-8">
+      <section className="container mx-auto px-4 py-4 sm:py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex flex-wrap items-center justify-between gap-4"
+          className="mb-4 sm:mb-8"
         >
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Verify & Publish</h1>
-            <p className="text-muted-foreground">Review the AI-extracted details</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {formData.confidence_overall && (
-              <ConfidenceBadge confidence={formData.confidence_overall} />
-            )}
-            <EvidenceDrawer evidence={formData.evidence_json as Record<string, string>} />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Verify & Publish</h1>
+              <p className="text-sm text-muted-foreground">Review the AI-extracted details</p>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              {formData.confidence_overall && (
+                <ConfidenceBadge confidence={formData.confidence_overall} />
+              )}
+              <EvidenceDrawer evidence={formData.evidence_json as Record<string, string>} />
+            </div>
           </div>
         </motion.div>
 
-        <div className="grid gap-8 lg:grid-cols-2">
-          {/* Poster Preview */}
+        <div className="grid gap-6 lg:gap-8 lg:grid-cols-2">
+          {/* Poster Preview - Collapsible on mobile */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="sticky top-24"
+            className="lg:sticky lg:top-24"
           >
             <div className="overflow-hidden rounded-xl border border-border bg-card">
               <img
                 src={posterUrl}
                 alt="Event poster"
                 className="h-full w-full object-cover"
-                style={{ maxHeight: "600px" }}
+                style={{ maxHeight: "300px" }}
               />
             </div>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-3 flex gap-2">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleReExtract}
                 disabled={isExtracting}
+                className="text-xs sm:text-sm"
               >
                 {isExtracting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
+                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                 )}
-                Re-run Extraction
+                Re-extract
               </Button>
             </div>
           </motion.div>
@@ -514,31 +518,33 @@ export default function DraftPage() {
               </div>
             )}
 
-            {/* Action buttons */}
-            <div className="flex gap-3 pt-4">
+            {/* Action buttons - Sticky on mobile */}
+            <div className="flex gap-3 pt-4 pb-4 sm:pb-0 sticky bottom-0 bg-background/95 backdrop-blur-sm sm:relative sm:bg-transparent sm:backdrop-blur-none border-t sm:border-t-0 -mx-4 px-4 sm:mx-0 sm:px-0 mt-4">
               <Button
                 variant="outline"
                 onClick={() => saveMutation.mutate(formData)}
                 disabled={saveMutation.isPending}
+                className="flex-1 sm:flex-initial h-11 sm:h-10"
               >
                 {saveMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Save className="mr-2 h-4 w-4" />
                 )}
-                Save Draft
+                <span className="hidden sm:inline">Save Draft</span>
+                <span className="sm:hidden">Save</span>
               </Button>
               <Button
                 onClick={() => publishMutation.mutate()}
                 disabled={!isValid || publishMutation.isPending}
-                className="gradient-bg"
+                className="gradient-bg flex-1 sm:flex-initial h-11 sm:h-10"
               >
                 {publishMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                Publish Event
+                Publish
               </Button>
             </div>
           </motion.div>

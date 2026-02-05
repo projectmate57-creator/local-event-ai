@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -15,6 +15,7 @@ import {
   CheckCircle,
   Clock,
   AlertTriangle,
+  LogOut,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
@@ -64,6 +65,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Event } from "@/lib/types";
 import { generateSlug } from "@/lib/slug";
 import { cn } from "@/lib/utils";
+import { AdminPasswordGate } from "@/components/AdminPasswordGate";
 
 const OWNER_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -100,6 +102,26 @@ const initialFormData: EventFormData = {
 };
 
 export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const authenticated = sessionStorage.getItem('admin_authenticated') === 'true';
+    setIsAuthenticated(authenticated);
+  }, []);
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('admin_authenticated');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <AdminPasswordGate onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
+
+  return <AdminDashboard onLogout={handleLogout} />;
+}
+
+function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -290,9 +312,20 @@ export default function AdminPage() {
           className="mb-8"
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-muted-foreground">Manage all events</p>
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+                <p className="text-muted-foreground">Manage all events</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onLogout}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                Logout
+              </Button>
             </div>
             <Dialog
               open={isCreateOpen}

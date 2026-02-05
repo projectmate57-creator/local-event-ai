@@ -12,7 +12,6 @@ import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { ConfidenceChip } from "@/components/ConfidenceChip";
 import { EvidenceDrawer } from "@/components/EvidenceDrawer";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Event } from "@/lib/types";
 import { generateSlug } from "@/lib/slug";
@@ -24,11 +23,16 @@ export default function DraftPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState<Partial<EventFormData>>({});
   const [isExtracting, setIsExtracting] = useState(false);
+
+  // Separate date/time inputs (stored as local strings)
+  const [startDate, setStartDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [endTime, setEndTime] = useState("");
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["draft", id],
@@ -66,8 +70,14 @@ export default function DraftPage() {
         evidence_json: event.evidence_json,
         slug: event.slug,
       });
+
+      setStartDate(formatDateLocal(event.start_at));
+      setStartTime(formatTimeLocal(event.start_at));
+      setEndDate(formatDateLocal(event.end_at));
+      setEndTime(formatTimeLocal(event.end_at));
     }
   }, [event]);
+
 
   const saveMutation = useMutation({
     mutationFn: async (data: Partial<EventFormData>) => {
@@ -276,36 +286,81 @@ export default function DraftPage() {
             </div>
 
             {/* Date/Time */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <Label htmlFor="start_at">
-                    Start Date & Time <span className="text-destructive">*</span>
-                  </Label>
-                  {getFieldConfidence("start_at") !== undefined && (
-                    <ConfidenceChip confidence={getFieldConfidence("start_at")!} />
-                  )}
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <Label htmlFor="start_date">
+                      Start Date <span className="text-destructive">*</span>
+                    </Label>
+                    {getFieldConfidence("start_at") !== undefined && (
+                      <ConfidenceChip confidence={getFieldConfidence("start_at")!} />
+                    )}
+                  </div>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setStartDate(next);
+                      const iso = combineDateTimeLocal(next, startTime);
+                      if (iso) updateField("start_at", iso);
+                    }}
+                    className={cn(isLowConfidence("start_at") && "border-accent")}
+                  />
                 </div>
-                <Input
-                  id="start_at"
-                  type="datetime-local"
-                  value={formatDateTimeLocal(formData.start_at)}
-                  onChange={(e) => updateField("start_at", new Date(e.target.value).toISOString())}
-                  className={cn(isLowConfidence("start_at") && "border-accent")}
-                />
+
+                <div className="space-y-2">
+                  <Label htmlFor="start_time">Start Time</Label>
+                  <Input
+                    id="start_time"
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setStartTime(next);
+                      const iso = combineDateTimeLocal(startDate, next);
+                      if (iso) updateField("start_at", iso);
+                    }}
+                    className={cn(isLowConfidence("start_at") && "border-accent")}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="end_at">End Date & Time</Label>
-                <Input
-                  id="end_at"
-                  type="datetime-local"
-                  value={formatDateTimeLocal(formData.end_at)}
-                  onChange={(e) =>
-                    updateField("end_at", e.target.value ? new Date(e.target.value).toISOString() : null)
-                  }
-                />
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="end_date">End Date</Label>
+                  <Input
+                    id="end_date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setEndDate(next);
+                      const iso = combineDateTimeLocal(next, endTime);
+                      updateField("end_at", iso);
+                    }}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="end_time">End Time</Label>
+                  <Input
+                    id="end_time"
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setEndTime(next);
+                      const iso = combineDateTimeLocal(endDate, next);
+                      updateField("end_at", iso);
+                    }}
+                  />
+                </div>
               </div>
             </div>
+
 
             {/* Location */}
             <div className="grid gap-4 sm:grid-cols-2">
@@ -465,10 +520,28 @@ export default function DraftPage() {
   );
 }
 
-function formatDateTimeLocal(isoString?: string | null): string {
+function formatDateLocal(isoString?: string | null): string {
   if (!isoString) return "";
   const date = new Date(isoString);
-  return date.toISOString().slice(0, 16);
+  const yyyy = String(date.getFullYear());
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatTimeLocal(isoString?: string | null): string {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mi = String(date.getMinutes()).padStart(2, "0");
+  return `${hh}:${mi}`;
+}
+
+function combineDateTimeLocal(date: string, time: string): string | null {
+  if (!date || !time) return null;
+  const d = new Date(`${date}T${time}`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
 }
 
 function isValidUrl(url: string): boolean {

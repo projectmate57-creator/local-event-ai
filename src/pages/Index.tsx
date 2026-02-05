@@ -6,13 +6,11 @@ import { Layout } from "@/components/Layout";
 import { EventCard } from "@/components/EventCard";
 import { EventCardSkeleton } from "@/components/EventCardSkeleton";
 import { ChatWidget } from "@/components/ChatWidget";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Event } from "@/lib/types";
 
 export default function Index() {
-  const { user } = useAuth();
   const navigate = useNavigate();
 
   const { data: featuredEvents, isLoading } = useQuery({
@@ -33,11 +31,7 @@ export default function Index() {
   });
 
   const handleUploadClick = () => {
-    if (!user) {
-      navigate("/signin");
-    } else {
-      navigate("/upload");
-    }
+    navigate("/upload");
   };
 
   return (

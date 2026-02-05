@@ -20,11 +20,11 @@ export function Layout({ children }: LayoutProps) {
         className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl"
       >
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-bg">
-              <CalendarHeart className="h-5 w-5 text-white" />
+          <Link to="/" className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground">
+              <CalendarHeart className="h-5 w-5 text-background" />
             </div>
-            <span className="text-lg font-semibold">TinyTinyEvents</span>
+            <span className="text-lg font-semibold tracking-tight">TinyTinyEvents</span>
           </Link>
 
           <nav className="flex items-center gap-1">
@@ -47,7 +47,7 @@ export function Layout({ children }: LayoutProps) {
             <ThemeToggle />
 
             <Link to="/upload">
-              <Button size="sm" className="gradient-bg">
+              <Button size="sm" className="bg-foreground text-background hover:bg-foreground/90">
                 <Plus className="mr-1.5 h-4 w-4" />
                 Upload
               </Button>

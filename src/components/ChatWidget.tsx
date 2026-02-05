@@ -79,9 +79,9 @@ export function ChatWidget() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/30 transition-colors hover:bg-primary/90"
+            className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-foreground shadow-2xl transition-all hover:scale-105"
           >
-            <MessageCircle className="h-6 w-6 text-primary-foreground" />
+            <MessageCircle className="h-6 w-6 text-background" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -93,17 +93,17 @@ export function ChatWidget() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 flex h-[500px] w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+            className="fixed bottom-6 right-6 z-50 flex h-[520px] w-[400px] flex-col overflow-hidden rounded-2xl border border-foreground/10 bg-card shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-border px-4 py-3 bg-primary">
+            <div className="flex items-center justify-between border-b border-foreground/10 px-4 py-3 bg-foreground">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary-foreground" />
-                <h3 className="font-semibold text-primary-foreground">Find Events</h3>
+                <Sparkles className="h-5 w-5 text-background" />
+                <h3 className="font-semibold text-background">Find Events</h3>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="rounded-full p-1 text-primary-foreground/80 transition-colors hover:bg-primary-foreground/20 hover:text-primary-foreground"
+                className="rounded-full p-1 text-background/80 transition-colors hover:bg-background/20 hover:text-background"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -138,10 +138,10 @@ export function ChatWidget() {
                       className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-2xl px-4 py-2 ${
+                        className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
                           msg.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-foreground"
+                            ? "bg-foreground text-background"
+                            : "border border-foreground/10 bg-muted text-foreground"
                         }`}
                       >
                         {msg.role === "assistant" ? (
@@ -186,7 +186,7 @@ export function ChatWidget() {
                   type="submit"
                   size="icon"
                   disabled={!input.trim() || isLoading}
-                  className="bg-primary text-primary-foreground shadow-sm transition-all hover:bg-primary/90"
+                  className="bg-foreground text-background shadow-sm transition-all hover:bg-foreground/90"
                 >
                   <Send className="h-4 w-4" />
                 </Button>

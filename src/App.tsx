@@ -10,6 +10,7 @@ import EventDetailPage from "./pages/EventDetailPage";
 import UploadPage from "./pages/UploadPage";
 import DraftPage from "./pages/DraftPage";
 import ContactPage from "./pages/ContactPage";
+import HowItWorksPage from "./pages/HowItWorksPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/drafts/:id" element={<DraftPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

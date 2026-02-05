@@ -31,6 +31,9 @@ export function Footer() {
               <Link to="/events" className="text-sm text-muted-foreground transition-colors hover:text-primary">
                 Browse Events
               </Link>
+              <Link to="/how-it-works" className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                How It Works
+              </Link>
               <Link to="/upload" className="text-sm text-muted-foreground transition-colors hover:text-primary">
                 Upload Poster
               </Link>

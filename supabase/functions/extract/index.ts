@@ -13,34 +13,8 @@ serve(async (req) => {
 
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Authentication check
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Create a client with the user's token to validate authentication
-    const userSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userSupabase.auth.getClaims(token);
-
-    if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ error: "Invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const userId = claimsData.claims.sub;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     const { eventId, imageUrl, sourceUrl } = await req.json();
     
@@ -53,29 +27,6 @@ serve(async (req) => {
 
     // Use service role for database operations
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    // Verify event ownership before proceeding
-    const { data: event, error: eventError } = await supabase
-      .from("events")
-      .select("owner_id")
-      .eq("id", eventId)
-      .single();
-
-    if (eventError || !event) {
-      return new Response(
-        JSON.stringify({ error: "Event not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (event.owner_id !== userId) {
-      return new Response(
-        JSON.stringify({ error: "Forbidden - not the event owner" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     let extractedData;
 

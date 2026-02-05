@@ -22,7 +22,7 @@ export function EventCard({ event, index = 0 }: EventCardProps) {
       className="group"
     >
       <Link to={`/events/${event.slug || event.id}`}>
-        <div className="overflow-hidden rounded-xl border border-border bg-card card-shadow transition-all duration-300 hover:card-shadow-hover">
+        <div className="overflow-hidden rounded-xl border border-foreground/10 bg-card transition-all duration-500 hover:border-foreground/20 hover:shadow-2xl">
           {/* Image */}
           <div className="relative aspect-[4/3] overflow-hidden bg-muted">
             <img

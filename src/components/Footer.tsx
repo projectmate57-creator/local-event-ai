@@ -5,7 +5,7 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border bg-card/50 backdrop-blur-sm">
+    <footer className="border-t border-foreground/10 bg-foreground/[0.02]">
       <div className="container mx-auto px-4 py-12">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
@@ -62,7 +62,7 @@ export function Footer() {
                 href="https://linkedin.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:border-primary hover:text-primary hover:shadow-md"
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-foreground/10 bg-background text-muted-foreground transition-all hover:border-foreground hover:bg-foreground hover:text-background"
               >
                 <Linkedin className="h-5 w-5" />
               </a>
@@ -70,7 +70,7 @@ export function Footer() {
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:border-primary hover:text-primary hover:shadow-md"
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-foreground/10 bg-background text-muted-foreground transition-all hover:border-foreground hover:bg-foreground hover:text-background"
               >
                 <Twitter className="h-5 w-5" />
               </a>
@@ -78,7 +78,7 @@ export function Footer() {
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:border-primary hover:text-primary hover:shadow-md"
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-foreground/10 bg-background text-muted-foreground transition-all hover:border-foreground hover:bg-foreground hover:text-background"
               >
                 <Github className="h-5 w-5" />
               </a>

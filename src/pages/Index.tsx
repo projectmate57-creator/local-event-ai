@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Sparkles, Calendar, MapPin, Users } from "lucide-react";
+import { ArrowRight, Sparkles, Calendar, MapPin, Users, Zap, Globe, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/Layout";
 import { EventCard } from "@/components/EventCard";
 import { EventCardSkeleton } from "@/components/EventCardSkeleton";
 import { ChatWidget } from "@/components/ChatWidget";
 import { Footer } from "@/components/Footer";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Event } from "@/lib/types";
@@ -42,114 +43,170 @@ export default function Index() {
       description: "Our AI reads your poster and extracts all event details automatically",
     },
     {
-      icon: Calendar,
+      icon: Zap,
       title: "Instant Pages",
       description: "Get a beautiful, shareable event page in seconds",
     },
     {
-      icon: Users,
+      icon: Globe,
       title: "Local Focus",
       description: "Built for tiny local events that bring communities together",
     },
   ];
 
+  const stats = [
+    { value: "500+", label: "Events Created" },
+    { value: "10K+", label: "Posters Scanned" },
+    { value: "50+", label: "Cities" },
+  ];
+
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        {/* Background - soft gradients */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5" />
-          <div className="absolute right-0 top-0 h-[600px] w-[600px] -translate-y-1/4 translate-x-1/4 rounded-full bg-primary/10 blur-[120px]" />
-          <div className="absolute -left-32 bottom-0 h-[400px] w-[400px] rounded-full bg-accent/10 blur-[100px]" />
-        </div>
+      <section className="relative min-h-[90vh] overflow-hidden">
+        <AnimatedBackground />
 
-        <div className="container mx-auto px-4 pb-24 pt-20">
+        <div className="container mx-auto px-4 pb-32 pt-24">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="mx-auto max-w-3xl text-center"
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="mx-auto max-w-4xl text-center"
           >
             {/* Badge */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary"
+              className="mb-8 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/5 px-5 py-2 text-sm font-medium backdrop-blur-sm"
             >
-              <Sparkles className="h-4 w-4" />
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-foreground opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-foreground" />
+              </span>
               AI-Powered Event Discovery
             </motion.div>
 
-            <h1 className="mb-6 text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+              className="mb-8 text-5xl font-bold leading-[1.1] tracking-tight sm:text-6xl lg:text-7xl"
+            >
               Turn a poster into a{" "}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                real event link
+              <span className="relative">
+                <span className="relative z-10">real event link</span>
+                <motion.span
+                  className="absolute -bottom-2 left-0 right-0 h-3 bg-foreground/10"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 0.8, duration: 0.6 }}
+                />
               </span>{" "}
               in seconds
-            </h1>
+            </motion.h1>
 
-            <p className="mb-10 text-lg text-muted-foreground sm:text-xl">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+              className="mx-auto mb-12 max-w-2xl text-lg text-muted-foreground sm:text-xl"
+            >
               Upload your event poster, let AI extract the details, and publish a beautiful
               event page. Perfect for local meetups, workshops, and community events.
-            </p>
+            </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.5 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
               className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
             >
               <Button
                 size="lg"
                 onClick={handleUploadClick}
-                className="h-13 px-8 text-base shadow-lg shadow-primary/25 transition-all duration-300 hover:shadow-xl hover:shadow-primary/30"
+                className="group h-14 px-8 text-base font-medium shadow-2xl shadow-foreground/20 transition-all duration-300 hover:shadow-foreground/30"
               >
                 Upload Poster
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
               <Link to="/events">
                 <Button
                   variant="outline"
                   size="lg"
-                  className="h-13 px-8 text-base transition-all duration-300 hover:bg-muted"
+                  className="h-14 px-8 text-base font-medium transition-all duration-300 hover:bg-foreground hover:text-background"
                 >
                   Browse Events
                 </Button>
               </Link>
             </motion.div>
-          </motion.div>
 
-          {/* Feature highlights */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.7 }}
-            className="mx-auto mt-24 grid max-w-4xl gap-6 sm:grid-cols-3"
-          >
-            {features.map((feature, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 + i * 0.1, duration: 0.5 }}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className="group rounded-2xl border border-border bg-card p-6 text-center shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-lg"
-              >
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 transition-all duration-300 group-hover:from-primary/20 group-hover:to-accent/20">
-                  <feature.icon className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="mb-2 font-semibold text-card-foreground">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">{feature.description}</p>
-              </motion.div>
-            ))}
+            {/* Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7, duration: 0.6 }}
+              className="mt-20 flex justify-center gap-12 border-t border-foreground/10 pt-12 sm:gap-20"
+            >
+              {stats.map((stat, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.8 + i * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="text-3xl font-bold sm:text-4xl">{stat.value}</div>
+                  <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
+                </motion.div>
+              ))}
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
+      {/* Feature highlights */}
+      <section className="border-t border-foreground/10 py-24">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-16 text-center"
+          >
+            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">How it works</h2>
+            <p className="text-muted-foreground">Three simple steps to create your event page</p>
+          </motion.div>
+
+          <div className="mx-auto grid max-w-5xl gap-8 sm:grid-cols-3">
+            {features.map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15, duration: 0.5 }}
+                whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                className="group relative rounded-2xl border border-foreground/10 bg-card p-8 transition-all duration-300 hover:border-foreground/20 hover:shadow-2xl"
+              >
+                {/* Step number */}
+                <div className="absolute -top-4 left-6 flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background">
+                  {i + 1}
+                </div>
+                
+                <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl border border-foreground/10 bg-foreground/5 transition-all duration-300 group-hover:bg-foreground group-hover:text-background">
+                  <feature.icon className="h-7 w-7" />
+                </div>
+                <h3 className="mb-3 text-xl font-semibold">{feature.title}</h3>
+                <p className="text-muted-foreground">{feature.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Featured Events Section */}
-      <section className="border-t border-border bg-muted/30 py-20">
+      <section className="border-t border-foreground/10 bg-muted/30 py-24">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -159,15 +216,18 @@ export default function Index() {
             className="mb-12 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end"
           >
             <div>
-              <h2 className="text-3xl font-bold text-foreground">Upcoming Events</h2>
-              <p className="mt-2 text-muted-foreground">
+              <h2 className="text-3xl font-bold sm:text-4xl">Upcoming Events</h2>
+              <p className="mt-3 text-muted-foreground">
                 Discover what's happening in your community
               </p>
             </div>
             <Link to="/events">
-              <Button variant="outline" className="transition-all duration-300 hover:bg-primary hover:text-primary-foreground">
-                View all
-                <ArrowRight className="ml-2 h-4 w-4" />
+              <Button 
+                variant="outline" 
+                className="group transition-all duration-300 hover:bg-foreground hover:text-background"
+              >
+                View all events
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
           </motion.div>
@@ -185,21 +245,52 @@ export default function Index() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="col-span-full py-16 text-center"
+                className="col-span-full py-20 text-center"
               >
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                  <MapPin className="h-8 w-8 text-muted-foreground" />
+                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-foreground/20">
+                  <MapPin className="h-10 w-10 text-muted-foreground" />
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-foreground">No upcoming events</h3>
-                <p className="mb-6 text-muted-foreground">
+                <h3 className="mb-2 text-xl font-semibold">No upcoming events</h3>
+                <p className="mb-8 text-muted-foreground">
                   Be the first to create an event!
                 </p>
-                <Button onClick={handleUploadClick} className="shadow-lg shadow-primary/20">
+                <Button onClick={handleUploadClick} size="lg" className="shadow-xl">
                   Upload a Poster
                 </Button>
               </motion.div>
             )}
           </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="border-t border-foreground/10 py-24">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mx-auto max-w-3xl text-center"
+          >
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/5 px-4 py-2">
+              <Heart className="h-4 w-4" />
+              <span className="text-sm font-medium">Made for communities</span>
+            </div>
+            <h2 className="mb-6 text-3xl font-bold sm:text-4xl lg:text-5xl">
+              Ready to share your next event?
+            </h2>
+            <p className="mb-10 text-lg text-muted-foreground">
+              Join hundreds of organizers who use TinyTinyEvents to reach their local community.
+            </p>
+            <Button
+              size="lg"
+              onClick={handleUploadClick}
+              className="h-14 px-10 text-base font-medium shadow-2xl"
+            >
+              Get Started — It's Free
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </motion.div>
         </div>
       </section>
 

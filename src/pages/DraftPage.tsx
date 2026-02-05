@@ -537,7 +537,7 @@ export default function DraftPage() {
               <Button
                 onClick={() => publishMutation.mutate()}
                 disabled={!isValid || publishMutation.isPending}
-                className="gradient-bg flex-1 sm:flex-initial h-11 sm:h-10"
+                className="flex-1 sm:flex-initial h-11 sm:h-10 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {publishMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

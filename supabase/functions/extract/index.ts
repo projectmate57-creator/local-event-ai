@@ -176,7 +176,7 @@ ${textContent}`;
       };
     }
 
-    // Validate and fix dates
+    // Validate dates but DON'T auto-change them - let user verify
     let startAt = extractedData.start_at;
     let endAt = extractedData.end_at;
     
@@ -187,23 +187,23 @@ ${textContent}`;
         if (isNaN(startDate.getTime())) {
           // Invalid date, use fallback
           startAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-          extractedData.confidence = { ...extractedData.confidence, start_at: 0.2 };
+          extractedData.confidence = { ...extractedData.confidence, start_at: 0.2, overall: 0.3 };
           extractedData.evidence = { ...extractedData.evidence, start_at: "Could not parse date - please verify" };
         } else {
-          // Check if year is missing (date is far in the past)
-          const yearDiff = currentYear - startDate.getFullYear();
-          if (yearDiff > 1) {
-            // Likely missing year, adjust to current or next year
-            startDate.setFullYear(currentYear);
-            // If the date is now in the past, try next year
-            if (startDate < new Date()) {
-              startDate.setFullYear(currentYear + 1);
-            }
-            startAt = startDate.toISOString();
-            extractedData.confidence = { ...extractedData.confidence, start_at: 0.5 };
+          // Check if date is in the past - WARN but don't auto-change
+          const isPastEvent = startDate < new Date();
+          const yearOnPoster = startDate.getFullYear();
+          
+          if (isPastEvent) {
+            // Lower confidence and add warning, but keep original extracted date
+            extractedData.confidence = { 
+              ...extractedData.confidence, 
+              start_at: 0.4,
+              overall: Math.min(extractedData.confidence?.overall || 1, 0.6)
+            };
             extractedData.evidence = { 
               ...extractedData.evidence, 
-              start_at: `${extractedData.evidence?.start_at || ''} (year assumed as ${startDate.getFullYear()})` 
+              start_at: `${extractedData.evidence?.start_at || ''} ⚠️ DATE APPEARS TO BE IN THE PAST (${yearOnPoster}) - please verify the year` 
             };
           }
         }
@@ -218,6 +218,8 @@ ${textContent}`;
     } catch (e) {
       console.error("Date parsing error:", e);
       startAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      extractedData.confidence = { ...extractedData.confidence, start_at: 0.2, overall: 0.3 };
+      extractedData.evidence = { ...extractedData.evidence, start_at: "Date parsing failed - please set manually" };
     }
 
     // Update the event with extracted data

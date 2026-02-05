@@ -42,6 +42,15 @@ export function Layout({ children }: LayoutProps) {
                 Events
               </Button>
             </Link>
+            <Link to="/how-it-works">
+              <Button
+                variant={location.pathname === "/how-it-works" ? "secondary" : "ghost"}
+                size="sm"
+                className="transition-all duration-200"
+              >
+                How it works
+              </Button>
+            </Link>
             <Link to="/contact">
               <Button
                 variant={location.pathname === "/contact" ? "secondary" : "ghost"}

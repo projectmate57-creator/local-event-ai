@@ -73,6 +73,16 @@ export default function Index() {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="mx-auto max-w-4xl text-center"
           >
+            {/* Tagline */}
+            <motion.p
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+              className="mb-4 text-sm font-medium tracking-wide text-muted-foreground"
+            >
+              Share the tiny moments nearby
+            </motion.p>
+
             {/* Badge */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}

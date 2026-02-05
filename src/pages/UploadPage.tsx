@@ -5,17 +5,17 @@ import { Loader2 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { FileUpload } from "@/components/FileUpload";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+
+const OWNER_ID = "00000000-0000-0000-0000-000000000000";
 
 export default function UploadPage() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
 
-  // For testing: use a mock owner ID if not logged in
-  const ownerId = user?.id || "00000000-0000-0000-0000-000000000000";
+  // Unauthenticated/testing mode
+  const ownerId = OWNER_ID;
 
   const handleFileSelect = async (file: File) => {
     setIsLoading(true);

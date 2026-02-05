@@ -14,11 +14,8 @@ export default function UploadPage() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Redirect if not logged in
-  if (!user) {
-    navigate("/signin");
-    return null;
-  }
+  // For testing: use a mock owner ID if not logged in
+  const ownerId = user?.id || "00000000-0000-0000-0000-000000000000";
 
   const handleFileSelect = async (file: File) => {
     setIsLoading(true);
@@ -26,7 +23,7 @@ export default function UploadPage() {
     try {
       // Upload file to storage
       const fileExt = file.name.split(".").pop();
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+      const filePath = `${ownerId}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("posters")
@@ -45,7 +42,7 @@ export default function UploadPage() {
       const { data: event, error: insertError } = await supabase
         .from("events")
         .insert({
-          owner_id: user.id,
+          owner_id: ownerId,
           status: "draft",
           title: "Untitled Event",
           start_at: new Date().toISOString(),
@@ -93,7 +90,7 @@ export default function UploadPage() {
       const { data: event, error: insertError } = await supabase
         .from("events")
         .insert({
-          owner_id: user.id,
+          owner_id: ownerId,
           status: "draft",
           title: "Untitled Event",
           start_at: new Date().toISOString(),
@@ -135,7 +132,7 @@ export default function UploadPage() {
       const { data: event, error: insertError } = await supabase
         .from("events")
         .insert({
-          owner_id: user.id,
+          owner_id: ownerId,
           status: "draft",
           title: "Untitled Event",
           start_at: new Date().toISOString(),

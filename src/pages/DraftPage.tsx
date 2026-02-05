@@ -33,25 +33,17 @@ export default function DraftPage() {
   const { data: event, isLoading } = useQuery({
     queryKey: ["draft", id],
     queryFn: async () => {
-      if (!user) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("events")
         .select("*")
         .eq("id", id)
-        .eq("owner_id", user.id)
         .single();
 
       if (error) throw error;
       return data as Event;
     },
-    enabled: !!id && !!user,
+    enabled: !!id,
   });
-
-  useEffect(() => {
-    if (!user) {
-      navigate("/signin");
-    }
-  }, [user, navigate]);
 
   useEffect(() => {
     if (event) {

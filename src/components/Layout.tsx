@@ -16,11 +16,7 @@ export function Layout({ children }: LayoutProps) {
   const { user, signOut, loading } = useAuth();
 
   const handleUploadClick = () => {
-    if (!user) {
-      navigate("/signin");
-    } else {
-      navigate("/upload");
-    }
+    navigate("/upload");
   };
 
   const handleSignOut = async () => {

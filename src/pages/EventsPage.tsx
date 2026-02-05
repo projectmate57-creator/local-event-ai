@@ -50,12 +50,8 @@ export default function EventsPage() {
         if (range) {
           query = query.gte("start_at", range.start).lt("start_at", range.end);
         }
-      } else {
-        // Only show future events for "soonest" sort
-        if (filters.sortBy === "soonest") {
-          query = query.gte("start_at", new Date().toISOString());
-        }
       }
+      // Note: We show all events regardless of date to include recently published ones
 
       // Sorting
       if (filters.sortBy === "newest") {

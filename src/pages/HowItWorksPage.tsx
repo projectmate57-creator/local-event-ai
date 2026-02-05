@@ -21,6 +21,10 @@ import {
   MapPin,
   Coffee,
   Building,
+  Instagram,
+  MessageCircle,
+  BarChart3,
+  Rocket,
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
@@ -537,6 +541,89 @@ export default function HowItWorksPage() {
                 </Card>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Future Work Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-12 text-center"
+          >
+            <Badge variant="outline" className="mb-4 border-accent/30 bg-accent/10">
+              <Rocket className="mr-1.5 h-3 w-3" />
+              Coming Soon
+            </Badge>
+            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">What's next</h2>
+            <p className="mx-auto max-w-xl text-muted-foreground">
+              We're building more ways to connect your community.
+            </p>
+          </motion.div>
+
+          <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-3">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0 }}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            >
+              <Card className="group h-full border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-transparent transition-all hover:border-primary/50 hover:shadow-lg">
+                <CardContent className="p-6">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500/20 to-purple-500/20">
+                    <Instagram className="h-6 w-6 text-pink-500" />
+                  </div>
+                  <h3 className="mb-2 font-semibold">Instagram tagging</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Tag <span className="font-medium text-foreground">@tinytinyevents</span> and we auto-create or attach the event link to your post.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            >
+              <Card className="group h-full border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-transparent transition-all hover:border-primary/50 hover:shadow-lg">
+                <CardContent className="p-6">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
+                    <MessageCircle className="h-6 w-6 text-blue-500" />
+                  </div>
+                  <h3 className="mb-2 font-semibold">Telegram bot</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Send a poster to the bot to create a draft event instantly. No app needed.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            >
+              <Card className="group h-full border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-transparent transition-all hover:border-primary/50 hover:shadow-lg">
+                <CardContent className="p-6">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20">
+                    <BarChart3 className="h-6 w-6 text-green-500" />
+                  </div>
+                  <h3 className="mb-2 font-semibold">Creator analytics</h3>
+                  <p className="text-sm text-muted-foreground">
+                    See views, clicks, and reach for every event you publish. Understand your impact.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
         </div>
       </section>

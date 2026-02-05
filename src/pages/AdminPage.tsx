@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { User } from "@supabase/supabase-js";
 import {
   Plus,
   Trash2,
@@ -16,6 +18,7 @@ import {
   Clock,
   AlertTriangle,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
@@ -65,9 +68,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Event } from "@/lib/types";
 import { generateSlug } from "@/lib/slug";
 import { cn } from "@/lib/utils";
-import { AdminPasswordGate } from "@/components/AdminPasswordGate";
-
-const OWNER_ID = "00000000-0000-0000-0000-000000000000";
+import { useAuth } from "@/hooks/useAuth";
 
 interface EventFormData {
   title: string;
@@ -102,26 +103,39 @@ const initialFormData: EventFormData = {
 };
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const authenticated = sessionStorage.getItem('admin_authenticated') === 'true';
-    setIsAuthenticated(authenticated);
-  }, []);
+    // Redirect to sign in if not authenticated
+    if (!loading && !user) {
+      navigate('/signin');
+    }
+  }, [user, loading, navigate]);
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('admin_authenticated');
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
   };
 
-  if (!isAuthenticated) {
-    return <AdminPasswordGate onAuthenticated={() => setIsAuthenticated(true)} />;
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center min-h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
   }
 
-  return <AdminDashboard onLogout={handleLogout} />;
+  if (!user) {
+    return null;
+  }
+
+  return <AdminDashboard user={user} onLogout={handleLogout} />;
 }
 
-function AdminDashboard({ onLogout }: { onLogout: () => void }) {
+function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -130,13 +144,18 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [formData, setFormData] = useState<EventFormData>(initialFormData);
 
-  // Fetch all events
+  // Use authenticated user's ID for event ownership
+  const ownerId = user.id;
+
+  // Fetch all events owned by current user
   const { data: events = [], isLoading } = useQuery({
-    queryKey: ["admin-events"],
+    queryKey: ["admin-events", ownerId],
     queryFn: async () => {
+      // Fetch events owned by current user (RLS will filter automatically)
       const { data, error } = await supabase
         .from("events")
         .select("*")
+        .eq("owner_id", ownerId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -180,7 +199,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       }
 
       const eventData = {
-        owner_id: OWNER_ID,
+        owner_id: ownerId,
         title: data.title,
         start_at: startAt,
         end_at: endAt,
@@ -314,8 +333,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-                <p className="text-muted-foreground">Manage all events</p>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-bold text-foreground">My Events</h1>
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                </div>
+                <p className="text-muted-foreground text-sm">
+                  Signed in as {user.email}
+                </p>
               </div>
               <Button
                 variant="ghost"

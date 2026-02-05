@@ -6,6 +6,51 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// URL validation to prevent SSRF attacks
+function validateUrl(urlString: string): URL {
+  let url: URL;
+  
+  try {
+    url = new URL(urlString);
+  } catch (e) {
+    throw new Error('Invalid URL format');
+  }
+  
+  // Only allow http/https
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    throw new Error('Only HTTP and HTTPS protocols are allowed');
+  }
+  
+  // Block private IP ranges and dangerous hosts
+  const hostname = url.hostname.toLowerCase();
+  
+  const blockedPatterns = [
+    /^localhost$/i,
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+    /^0\.0\.0\.0$/,
+    /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,  // 10.0.0.0/8
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/,  // 172.16.0.0/12
+    /^192\.168\.\d{1,3}\.\d{1,3}$/,  // 192.168.0.0/16
+    /^169\.254\.\d{1,3}\.\d{1,3}$/,  // Link-local / AWS metadata
+    /^\[?::1\]?$/,  // IPv6 localhost
+    /^\[?fe80:/i,  // IPv6 link-local
+    /metadata\.google\.internal/i,  // GCP metadata
+  ];
+  
+  for (const pattern of blockedPatterns) {
+    if (pattern.test(hostname)) {
+      throw new Error('Access to this hostname is not allowed');
+    }
+  }
+  
+  // Block internal domains
+  if (hostname.endsWith('.internal') || hostname.endsWith('.local')) {
+    throw new Error('Internal domains are not allowed');
+  }
+  
+  return url;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -13,8 +58,33 @@ serve(async (req) => {
 
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+    // Validate authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.log("Extract called without authentication");
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create user-scoped client to verify auth and ownership
+    const userSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await userSupabase.auth.getUser();
+    if (authError || !user) {
+      console.log("Extract called with invalid authentication:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { eventId, imageUrl, sourceUrl } = await req.json();
     
@@ -25,7 +95,40 @@ serve(async (req) => {
       );
     }
 
-    // Use service role for database operations
+    // Verify user owns the event (using user-scoped client respects RLS)
+    const { data: event, error: eventError } = await userSupabase
+      .from('events')
+      .select('owner_id')
+      .eq('id', eventId)
+      .maybeSingle();
+      
+    if (eventError) {
+      console.error("Error fetching event:", eventError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to verify event ownership' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (!event) {
+      console.log(`Event ${eventId} not found or user ${user.id} does not have access`);
+      return new Response(
+        JSON.stringify({ error: 'Event not found or access denied' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (event.owner_id !== user.id) {
+      console.log(`User ${user.id} attempted to extract for event owned by ${event.owner_id}`);
+      return new Response(
+        JSON.stringify({ error: 'You do not have permission to modify this event' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`User ${user.id} extracting data for event ${eventId}`);
+
+    // Use service role for database update operations after ownership is verified
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     let extractedData;
@@ -79,9 +182,40 @@ IMPORTANT DATE RULES:
           }
         ];
       } else if (sourceUrl) {
-        // For URL extraction, fetch the page first
+        // Validate URL before fetching (SSRF protection)
+        let validatedUrl: URL;
         try {
-          const pageResponse = await fetch(sourceUrl);
+          validatedUrl = validateUrl(sourceUrl);
+        } catch (e) {
+          console.error("Invalid sourceUrl:", sourceUrl, e);
+          return new Response(
+            JSON.stringify({ error: e instanceof Error ? e.message : 'Invalid URL' }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // For URL extraction, fetch the page with timeout
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+          const pageResponse = await fetch(validatedUrl.toString(), {
+            signal: controller.signal,
+            headers: { 'User-Agent': 'TinyTinyEvents/1.0' },
+          });
+          
+          clearTimeout(timeoutId);
+
+          if (!pageResponse.ok) {
+            throw new Error(`Failed to fetch URL: ${pageResponse.status}`);
+          }
+
+          // Check response size
+          const contentLength = pageResponse.headers.get('content-length');
+          if (contentLength && parseInt(contentLength) > 5242880) { // 5MB limit
+            throw new Error('Response too large');
+          }
+
           const html = await pageResponse.text();
           const textContent = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').substring(0, 4000);
           
@@ -249,6 +383,8 @@ ${textContent}`;
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`Successfully extracted data for event ${eventId}`);
 
     return new Response(JSON.stringify({ success: true, data: extractedData }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

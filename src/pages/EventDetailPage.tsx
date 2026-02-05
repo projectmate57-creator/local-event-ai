@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import {
   Calendar,
   MapPin,
-  Clock,
   ExternalLink,
   ArrowLeft,
   Download,
@@ -19,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Event } from "@/lib/types";
 import { formatEventDateRange } from "@/lib/date";
 import { generateGoogleCalendarUrl, downloadICS } from "@/lib/calendar";
+import { ShareButtons } from "@/components/ShareButtons";
 
 export default function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -204,6 +204,15 @@ export default function EventDetailPage() {
                 </p>
               </div>
             )}
+
+            {/* Share */}
+            <div className="pt-2">
+              <ShareButtons
+                url={`/events/${event.slug || event.id}`}
+                title={event.title}
+                description={event.description || undefined}
+              />
+            </div>
 
             {/* Actions */}
             <div className="flex flex-wrap gap-3 pt-4">

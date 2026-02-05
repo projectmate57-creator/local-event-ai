@@ -1,10 +1,19 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarHeart, Plus, Menu, X } from "lucide-react";
+import { CalendarHeart, Plus, Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface LayoutProps {
   children: ReactNode;
@@ -14,6 +23,7 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, signOut, loading } = useAuth();
 
   const navLinks = [
     { path: "/", label: "Home" },
@@ -25,6 +35,10 @@ export function Layout({ children }: LayoutProps) {
   const isActive = (path: string, matchPrefix?: boolean) => {
     if (matchPrefix) return location.pathname.startsWith(path);
     return location.pathname === path;
+  };
+
+  const getInitials = (email: string) => {
+    return email.charAt(0).toUpperCase();
   };
 
   return (
@@ -61,12 +75,55 @@ export function Layout({ children }: LayoutProps) {
 
               <ThemeToggle />
 
-              <Link to="/upload">
-                <Button size="sm" className="shadow-sm transition-all duration-200 hover:shadow-md">
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  Upload
-                </Button>
-              </Link>
+              {!loading && (
+                <>
+                  {user ? (
+                    <>
+                      <Link to="/upload">
+                        <Button size="sm" className="shadow-sm transition-all duration-200 hover:shadow-md">
+                          <Plus className="mr-1.5 h-4 w-4" />
+                          Upload
+                        </Button>
+                      </Link>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="ml-1">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                                {getInitials(user.email || "U")}
+                              </AvatarFallback>
+                            </Avatar>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground truncate">
+                            {user.email}
+                          </div>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link to="/dashboard" className="flex items-center gap-2 cursor-pointer">
+                              <LayoutDashboard className="h-4 w-4" />
+                              Dashboard
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={signOut} className="flex items-center gap-2 cursor-pointer text-destructive">
+                            <LogOut className="h-4 w-4" />
+                            Sign Out
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
+                  ) : (
+                    <Link to="/signin">
+                      <Button size="sm" variant="outline">
+                        <User className="mr-1.5 h-4 w-4" />
+                        Sign In
+                      </Button>
+                    </Link>
+                  )}
+                </>
+              )}
             </nav>
           )}
 
@@ -115,12 +172,45 @@ export function Layout({ children }: LayoutProps) {
 
                 <div className="my-2 h-px w-full bg-border" />
 
-                <Link to="/upload" onClick={() => setMobileMenuOpen(false)}>
-                  <Button size="sm" className="w-full shadow-sm">
-                    <Plus className="mr-1.5 h-4 w-4" />
-                    Upload Event
-                  </Button>
-                </Link>
+                {!loading && (
+                  <>
+                    {user ? (
+                      <>
+                        <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            <LayoutDashboard className="mr-1.5 h-4 w-4" />
+                            Dashboard
+                          </Button>
+                        </Link>
+                        <Link to="/upload" onClick={() => setMobileMenuOpen(false)}>
+                          <Button size="sm" className="w-full shadow-sm">
+                            <Plus className="mr-1.5 h-4 w-4" />
+                            Upload Event
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-destructive"
+                          onClick={() => {
+                            signOut();
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          <LogOut className="mr-1.5 h-4 w-4" />
+                          Sign Out
+                        </Button>
+                      </>
+                    ) : (
+                      <Link to="/signin" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="outline" size="sm" className="w-full">
+                          <User className="mr-1.5 h-4 w-4" />
+                          Sign In
+                        </Button>
+                      </Link>
+                    )}
+                  </>
+                )}
               </div>
             </motion.nav>
           )}
@@ -131,4 +221,3 @@ export function Layout({ children }: LayoutProps) {
     </div>
   );
 }
-

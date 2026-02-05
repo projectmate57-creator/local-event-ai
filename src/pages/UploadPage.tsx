@@ -1,22 +1,33 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, LogIn } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { FileUpload } from "@/components/FileUpload";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-
-const OWNER_ID = "00000000-0000-0000-0000-000000000000";
 
 export default function UploadPage() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
 
-  const ownerId = OWNER_ID;
+  // Get the actual user ID for ownership
+  const ownerId = user?.id;
 
   const handleFileSelect = async (file: File) => {
+    if (!ownerId) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to upload events",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -76,6 +87,15 @@ export default function UploadPage() {
   };
 
   const handleUrlSubmit = async (imageUrl: string) => {
+    if (!ownerId) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to upload events",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -115,6 +135,15 @@ export default function UploadPage() {
   };
 
   const handleEventUrlSubmit = async (sourceUrl: string) => {
+    if (!ownerId) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to upload events",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -152,6 +181,47 @@ export default function UploadPage() {
       setIsLoading(false);
     }
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <Layout>
+        <section className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[calc(100vh-200px)]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </section>
+      </Layout>
+    );
+  }
+
+  // Show sign-in prompt if not authenticated
+  if (!user) {
+    return (
+      <Layout>
+        <section className="container mx-auto px-4 py-16 min-h-[calc(100vh-200px)]">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-auto max-w-md text-center"
+          >
+            <div className="rounded-xl border border-border bg-card p-8">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <LogIn className="h-8 w-8 text-primary" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Sign in to upload</h1>
+              <p className="text-muted-foreground mb-6">
+                Create an account to start uploading and managing your events
+              </p>
+              <Link to="/signin">
+                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  Sign In
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+        </section>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

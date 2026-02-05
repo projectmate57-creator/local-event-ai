@@ -14,14 +14,12 @@ export default function UploadPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Unauthenticated/testing mode
   const ownerId = OWNER_ID;
 
   const handleFileSelect = async (file: File) => {
     setIsLoading(true);
 
     try {
-      // Upload file to storage
       const fileExt = file.name.split(".").pop();
       const filePath = `${ownerId}/${Date.now()}.${fileExt}`;
 
@@ -31,14 +29,12 @@ export default function UploadPage() {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from("posters")
         .getPublicUrl(filePath);
 
       const posterUrl = urlData.publicUrl;
 
-      // Create draft event
       const { data: event, error: insertError } = await supabase
         .from("events")
         .insert({
@@ -55,7 +51,6 @@ export default function UploadPage() {
 
       if (insertError) throw insertError;
 
-      // Call AI extraction
       const { error: extractError } = await supabase.functions.invoke("extract", {
         body: { eventId: event.id, imageUrl: posterUrl },
       });
@@ -68,7 +63,6 @@ export default function UploadPage() {
         });
       }
 
-      // Navigate to draft page
       navigate(`/drafts/${event.id}`);
     } catch (error) {
       console.error("Upload error:", error);
@@ -77,7 +71,6 @@ export default function UploadPage() {
         description: error instanceof Error ? error.message : "Failed to upload file",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -86,7 +79,6 @@ export default function UploadPage() {
     setIsLoading(true);
 
     try {
-      // Create draft event with external image
       const { data: event, error: insertError } = await supabase
         .from("events")
         .insert({
@@ -102,7 +94,6 @@ export default function UploadPage() {
 
       if (insertError) throw insertError;
 
-      // Call AI extraction
       const { error: extractError } = await supabase.functions.invoke("extract", {
         body: { eventId: event.id, imageUrl },
       });
@@ -119,7 +110,6 @@ export default function UploadPage() {
         description: error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -128,7 +118,6 @@ export default function UploadPage() {
     setIsLoading(true);
 
     try {
-      // Create draft event with source URL
       const { data: event, error: insertError } = await supabase
         .from("events")
         .insert({
@@ -144,7 +133,6 @@ export default function UploadPage() {
 
       if (insertError) throw insertError;
 
-      // Call AI extraction with source URL
       const { error: extractError } = await supabase.functions.invoke("extract", {
         body: { eventId: event.id, sourceUrl },
       });
@@ -161,44 +149,72 @@ export default function UploadPage() {
         description: error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
 
   return (
     <Layout>
-      <section className="container mx-auto px-4 py-20">
+      <section className="container mx-auto px-4 py-6 sm:py-10 lg:py-16 min-h-[calc(100vh-200px)]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mx-auto max-w-2xl text-center"
+          className="mx-auto max-w-2xl"
         >
-          <h1 className="mb-4 text-3xl font-bold text-foreground">Upload Event Poster</h1>
-          <p className="mb-12 text-muted-foreground">
-            Upload your event poster and our AI will extract all the details automatically.
-            You can review and edit before publishing.
-          </p>
+          {/* Header */}
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-2">
+              Upload Event Poster
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Snap a photo and we'll extract the details
+            </p>
+          </div>
 
           {isLoading ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex flex-col items-center gap-4 py-20"
+              className="flex flex-col items-center gap-4 py-16 sm:py-20"
             >
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-lg font-medium text-foreground">Processing your poster...</p>
-              <p className="text-sm text-muted-foreground">
-                AI is extracting event details. This may take a moment.
-              </p>
+              <div className="relative">
+                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                </div>
+                <motion.div
+                  className="absolute inset-0 rounded-full border-2 border-primary/30"
+                  animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+              </div>
+              <div className="text-center px-4">
+                <p className="text-lg font-medium text-foreground">
+                  Extracting event details...
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Our AI is reading your poster
+                </p>
+              </div>
             </motion.div>
           ) : (
-            <FileUpload
-              onFileSelect={handleFileSelect}
-              onUrlSubmit={handleUrlSubmit}
-              onEventUrlSubmit={handleEventUrlSubmit}
-              isLoading={isLoading}
-            />
+            <>
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                onUrlSubmit={handleUrlSubmit}
+                onEventUrlSubmit={handleEventUrlSubmit}
+                isLoading={isLoading}
+              />
+              
+              {/* Helper text */}
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="text-center text-xs text-muted-foreground mt-6"
+              >
+                📍 Spotted an event poster? Share it with the community!
+              </motion.p>
+            </>
           )}
         </motion.div>
       </section>

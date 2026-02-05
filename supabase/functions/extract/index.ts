@@ -30,6 +30,8 @@ serve(async (req) => {
 
     let extractedData;
 
+    const currentYear = new Date().getFullYear();
+    
     if (LOVABLE_API_KEY && (imageUrl || sourceUrl)) {
       // Use AI for extraction
       let prompt = "";
@@ -57,10 +59,15 @@ serve(async (req) => {
     "ticket_url": 0.0-1.0,
     "description": 0.0-1.0
   },
-  "evidence": { "fieldName": "reason from poster" }
+  "evidence": { "fieldName": "exact text from poster that supports this field" }
 }
 
-If you can't determine a date, use today at 18:00 with low confidence. Assume Europe/Berlin timezone.`;
+IMPORTANT DATE RULES:
+- The current year is ${currentYear}. If no year is visible on the poster, assume ${currentYear}.
+- If the date appears to be in the past for ${currentYear}, check if it makes sense for ${currentYear + 1} (recurring event).
+- If you can't determine a date at all, use a date 7 days from now with low confidence (0.3).
+- Always use Europe/Berlin timezone unless another timezone is clearly indicated.
+- Set start_at confidence to 0.5 if you had to assume the year.`;
 
         messages = [
           {
@@ -96,8 +103,10 @@ If you can't determine a date, use today at 18:00 with low confidence. Assume Eu
     "start_at": 0.0-1.0,
     "city": 0.0-1.0
   },
-  "evidence": { "fieldName": "reason" }
+  "evidence": { "fieldName": "exact text that supports this field" }
 }
+
+IMPORTANT: The current year is ${currentYear}. If no year is found, assume ${currentYear}.
 
 Page content:
 ${textContent}`;
@@ -167,13 +176,57 @@ ${textContent}`;
       };
     }
 
+    // Validate and fix dates
+    let startAt = extractedData.start_at;
+    let endAt = extractedData.end_at;
+    
+    // Ensure dates are valid ISO strings
+    try {
+      if (startAt) {
+        const startDate = new Date(startAt);
+        if (isNaN(startDate.getTime())) {
+          // Invalid date, use fallback
+          startAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+          extractedData.confidence = { ...extractedData.confidence, start_at: 0.2 };
+          extractedData.evidence = { ...extractedData.evidence, start_at: "Could not parse date - please verify" };
+        } else {
+          // Check if year is missing (date is far in the past)
+          const yearDiff = currentYear - startDate.getFullYear();
+          if (yearDiff > 1) {
+            // Likely missing year, adjust to current or next year
+            startDate.setFullYear(currentYear);
+            // If the date is now in the past, try next year
+            if (startDate < new Date()) {
+              startDate.setFullYear(currentYear + 1);
+            }
+            startAt = startDate.toISOString();
+            extractedData.confidence = { ...extractedData.confidence, start_at: 0.5 };
+            extractedData.evidence = { 
+              ...extractedData.evidence, 
+              start_at: `${extractedData.evidence?.start_at || ''} (year assumed as ${startDate.getFullYear()})` 
+            };
+          }
+        }
+      }
+      
+      if (endAt) {
+        const endDate = new Date(endAt);
+        if (isNaN(endDate.getTime())) {
+          endAt = null;
+        }
+      }
+    } catch (e) {
+      console.error("Date parsing error:", e);
+      startAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
     // Update the event with extracted data
     const { error: updateError } = await supabase
       .from("events")
       .update({
         title: extractedData.title || "Untitled Event",
-        start_at: extractedData.start_at,
-        end_at: extractedData.end_at,
+        start_at: startAt,
+        end_at: endAt,
         timezone: extractedData.timezone || "Europe/Berlin",
         city: extractedData.city || "",
         venue: extractedData.venue,

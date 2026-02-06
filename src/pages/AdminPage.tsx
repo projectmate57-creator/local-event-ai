@@ -19,6 +19,8 @@ import {
   AlertTriangle,
   LogOut,
   ShieldCheck,
+  Square,
+  CheckSquare,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
@@ -28,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,

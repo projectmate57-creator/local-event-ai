@@ -41,6 +41,13 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "event_analytics_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       events: {
@@ -120,7 +127,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      events_public: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string | null
+          description: string | null
+          end_at: string | null
+          id: string | null
+          poster_public_url: string | null
+          slug: string | null
+          start_at: string | null
+          status: string | null
+          tags: string[] | null
+          ticket_url: string | null
+          timezone: string | null
+          title: string | null
+          updated_at: string | null
+          venue: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_at?: string | null
+          id?: string | null
+          poster_public_url?: string | null
+          slug?: string | null
+          start_at?: string | null
+          status?: string | null
+          tags?: string[] | null
+          ticket_url?: string | null
+          timezone?: string | null
+          title?: string | null
+          updated_at?: string | null
+          venue?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_at?: string | null
+          id?: string | null
+          poster_public_url?: string | null
+          slug?: string | null
+          start_at?: string | null
+          status?: string | null
+          tags?: string[] | null
+          ticket_url?: string | null
+          timezone?: string | null
+          title?: string | null
+          updated_at?: string | null
+          venue?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

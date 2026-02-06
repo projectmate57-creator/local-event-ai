@@ -8,13 +8,13 @@ import { FiltersBar } from "@/components/FiltersBar";
 import { ChatWidget } from "@/components/ChatWidget";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Event, EventFilters } from "@/lib/types";
+import { PublicEvent, EventFilters } from "@/lib/types";
 import { getDateRangeFilter } from "@/lib/date";
 
 const EVENTS_PER_PAGE = 12;
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
@@ -28,9 +28,8 @@ export default function EventsPage() {
 
     try {
       let query = supabase
-        .from("events")
-        .select("*")
-        .eq("status", "published");
+        .from("events_public")
+        .select("*");
 
       // Search filter
       if (filters.search) {
@@ -69,10 +68,10 @@ export default function EventsPage() {
       if (error) throw error;
 
       if (isNewFilter) {
-        setEvents(data as Event[]);
+        setEvents(data as PublicEvent[]);
         setPage(1);
       } else {
-        setEvents((prev) => [...prev, ...(data as Event[])]);
+        setEvents((prev) => [...prev, ...(data as PublicEvent[])]);
       }
 
       setHasMore((data?.length ?? 0) === EVENTS_PER_PAGE);

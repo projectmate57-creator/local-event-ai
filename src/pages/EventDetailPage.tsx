@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { Event } from "@/lib/types";
+import { PublicEvent } from "@/lib/types";
 import { formatEventDateRange } from "@/lib/date";
 import { generateGoogleCalendarUrl, downloadICS } from "@/lib/calendar";
 import { ShareButtons } from "@/components/ShareButtons";
@@ -26,25 +26,24 @@ export default function EventDetailPage() {
   const { data: event, isLoading, error } = useQuery({
     queryKey: ["event", slug],
     queryFn: async () => {
-      // Try to find by slug first, then by ID
-      let query = supabase
-        .from("events")
+      // Try to find by slug first using the public view
+      const { data: bySlug } = await supabase
+        .from("events_public")
         .select("*")
-        .eq("status", "published");
+        .eq("slug", slug)
+        .maybeSingle();
 
-      const { data: bySlug } = await query.eq("slug", slug).single();
-      if (bySlug) return bySlug as Event;
+      if (bySlug) return bySlug as PublicEvent;
 
       // Try by ID
       const { data: byId, error } = await supabase
-        .from("events")
+        .from("events_public")
         .select("*")
-        .eq("status", "published")
         .eq("id", slug)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      return byId as Event;
+      return byId as PublicEvent;
     },
     enabled: !!slug,
   });

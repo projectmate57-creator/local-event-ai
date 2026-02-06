@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Tag, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Event } from "@/lib/types";
+import { Event, PublicEvent } from "@/lib/types";
 import { formatEventDate } from "@/lib/date";
 import { Badge } from "@/components/ui/badge";
 
 interface EventCardProps {
-  event: Event;
+  event: Event | PublicEvent;
   index?: number;
 }
 

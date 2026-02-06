@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 
@@ -42,11 +43,11 @@ export default function TermsPage() {
             <h2 className="text-xl font-semibold mb-3">3. Content Removal Requests</h2>
             <p className="text-muted-foreground leading-relaxed">
               If you are an event organizer and would like your event removed from our platform, 
-              please contact us at{" "}
-              <a href="mailto:hello@tinytinyevents.com" className="text-primary hover:underline">
-                hello@tinytinyevents.com
-              </a>{" "}
-              and we will remove it promptly. We respect organizers' wishes regarding how their 
+              please{" "}
+              <Link to="/contact" className="text-primary hover:underline">
+                contact us
+              </Link>{" "}
+              and we will remove it promptly. We respect organizers' wishes regarding how their
               events are promoted.
             </p>
           </section>
@@ -126,10 +127,11 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">9. Contact Us</h2>
             <p className="text-muted-foreground leading-relaxed">
-              For questions about these terms or to report content issues, please contact us at{" "}
-              <a href="mailto:hello@tinytinyevents.com" className="text-primary hover:underline">
-                hello@tinytinyevents.com
-              </a>
+              For questions about these terms or to report content issues,{" "}
+              <Link to="/contact" className="text-primary hover:underline">
+                click here
+              </Link>{" "}
+              to get in touch.
             </p>
           </section>
         </div>

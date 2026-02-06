@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 
@@ -105,10 +106,10 @@ export default function PrivacyPage() {
               <li><strong>Portability:</strong> Receive your data in a portable format</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-3">
-              To exercise these rights, contact us at{" "}
-              <a href="mailto:hello@tinytinyevents.com" className="text-primary hover:underline">
-                hello@tinytinyevents.com
-              </a>
+              To exercise these rights,{" "}
+              <Link to="/contact" className="text-primary hover:underline">
+                contact us here
+              </Link>.
             </p>
           </section>
 
@@ -145,10 +146,11 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">11. Contact Us</h2>
             <p className="text-muted-foreground leading-relaxed">
-              For privacy-related questions or to exercise your data rights, contact us at{" "}
-              <a href="mailto:hello@tinytinyevents.com" className="text-primary hover:underline">
-                hello@tinytinyevents.com
-              </a>
+              For privacy-related questions or to exercise your data rights,{" "}
+              <Link to="/contact" className="text-primary hover:underline">
+                click here
+              </Link>{" "}
+              to get in touch.
             </p>
           </section>
         </div>

@@ -186,7 +186,21 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      check_duplicate_events: {
+        Args: {
+          p_city: string
+          p_exclude_id?: string
+          p_start_at: string
+          p_title: string
+        }
+        Returns: {
+          city: string
+          id: string
+          start_at: string
+          title: string
+          venue: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

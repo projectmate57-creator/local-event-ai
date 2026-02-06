@@ -49,12 +49,13 @@ export default function EventDetailPage() {
     enabled: !!slug,
   });
 
-  // Track page view
+  // Track page view via rate-limited edge function
   useEffect(() => {
     if (event?.id) {
-      supabase
-        .from("event_analytics")
-        .insert({ event_id: event.id, type: "view" })
+      supabase.functions
+        .invoke("track-analytics", {
+          body: { event_id: event.id, type: "view" },
+        })
         .then(({ error }) => {
           if (error) console.error("Failed to track view:", error);
         });
@@ -63,10 +64,11 @@ export default function EventDetailPage() {
 
   const handleTicketClick = () => {
     if (event?.ticket_url) {
-      // Track click
-      supabase
-        .from("event_analytics")
-        .insert({ event_id: event.id, type: "ticket_click" })
+      // Track click via rate-limited edge function
+      supabase.functions
+        .invoke("track-analytics", {
+          body: { event_id: event.id, type: "ticket_click" },
+        })
         .then(() => {
           window.open(event.ticket_url!, "_blank");
         });

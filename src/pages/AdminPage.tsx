@@ -19,8 +19,6 @@ import {
   AlertTriangle,
   LogOut,
   ShieldCheck,
-  Square,
-  CheckSquare,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
@@ -146,23 +144,45 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [formData, setFormData] = useState<EventFormData>(initialFormData);
+  const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   // Use authenticated user's ID for event ownership
   const ownerId = user.id;
 
-  // Fetch all events owned by current user
-  const { data: events = [], isLoading } = useQuery({
-    queryKey: ["admin-events", ownerId],
+  // Check if user is admin
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["is-admin", user.id],
     queryFn: async () => {
-      // Fetch events owned by current user (RLS will filter automatically)
       const { data, error } = await supabase
-        .from("events")
-        .select("*")
-        .eq("owner_id", ownerId)
-        .order("created_at", { ascending: false });
+        .rpc("has_role", { _user_id: user.id, _role: "admin" });
+      if (error) return false;
+      return data === true;
+    },
+  });
 
-      if (error) throw error;
-      return data as Event[];
+  // Fetch events - admins see all, regular users see only their own
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ["admin-events", ownerId, isAdmin],
+    queryFn: async () => {
+      if (isAdmin) {
+        // Admins can see all events
+        const { data, error } = await supabase
+          .from("events")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return data as Event[];
+      } else {
+        // Regular users see only their own events
+        const { data, error } = await supabase
+          .from("events")
+          .select("*")
+          .eq("owner_id", ownerId)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return data as Event[];
+      }
     },
   });
 
@@ -184,6 +204,53 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
       });
     },
   });
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (eventIds: string[]) => {
+      const { error } = await supabase
+        .from("events")
+        .delete()
+        .in("id", eventIds);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: `${selectedEvents.size} events deleted` });
+      setSelectedEvents(new Set());
+      setBulkDeleteOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to delete events",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Selection helpers
+  const toggleSelectEvent = (eventId: string) => {
+    const newSelected = new Set(selectedEvents);
+    if (newSelected.has(eventId)) {
+      newSelected.delete(eventId);
+    } else {
+      newSelected.add(eventId);
+    }
+    setSelectedEvents(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedEvents.size === filteredEvents.length) {
+      setSelectedEvents(new Set());
+    } else {
+      setSelectedEvents(new Set(filteredEvents.map((e) => e.id)));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    bulkDeleteMutation.mutate(Array.from(selectedEvents));
+  };
 
   // Create/Update mutation
   const saveMutation = useMutation({
@@ -337,8 +404,13 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
             <div className="flex items-center gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-3xl font-bold text-foreground">My Events</h1>
+                  <h1 className="text-3xl font-bold text-foreground">
+                    {isAdmin ? "Admin Dashboard" : "My Events"}
+                  </h1>
                   <ShieldCheck className="h-5 w-5 text-primary" />
+                  {isAdmin && (
+                    <Badge variant="default" className="bg-primary">Admin</Badge>
+                  )}
                 </div>
                 <p className="text-muted-foreground text-sm">
                   Signed in as {user.email}
@@ -354,16 +426,49 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
                 Logout
               </Button>
             </div>
-            <Dialog
-              open={isCreateOpen}
-              onOpenChange={(open) => {
-                setIsCreateOpen(open);
-                if (!open) {
-                  setEditingEvent(null);
-                  setFormData(initialFormData);
-                }
-              }}
-            >
+            <div className="flex items-center gap-2">
+              {/* Bulk Delete Button - Admin only */}
+              {isAdmin && selectedEvents.size > 0 && (
+                <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Selected ({selectedEvents.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete {selectedEvents.size} events?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete all selected events. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleBulkDelete}
+                        disabled={bulkDeleteMutation.isPending}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {bulkDeleteMutation.isPending && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Delete All
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              <Dialog
+                open={isCreateOpen}
+                onOpenChange={(open) => {
+                  setIsCreateOpen(open);
+                  if (!open) {
+                    setEditingEvent(null);
+                    setFormData(initialFormData);
+                  }
+                }}
+              >
               <DialogTrigger asChild>
                 <Button className="gradient-bg">
                   <Plus className="mr-2 h-4 w-4" />
@@ -596,6 +701,7 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </motion.div>
 
@@ -662,6 +768,15 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
             <Table>
               <TableHeader>
                 <TableRow>
+                  {isAdmin && (
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedEvents.size === filteredEvents.length && filteredEvents.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>Event</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Location</TableHead>
@@ -672,7 +787,7 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
               <TableBody>
                 {filteredEvents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center">
+                    <TableCell colSpan={isAdmin ? 6 : 5} className="py-8 text-center">
                       <p className="text-muted-foreground">No events found</p>
                     </TableCell>
                   </TableRow>
@@ -680,7 +795,16 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
                   filteredEvents.map((event) => {
                     const isPast = new Date(event.start_at) < new Date();
                     return (
-                      <TableRow key={event.id}>
+                      <TableRow key={event.id} className={cn(selectedEvents.has(event.id) && "bg-muted/50")}>
+                        {isAdmin && (
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedEvents.has(event.id)}
+                              onCheckedChange={() => toggleSelectEvent(event.id)}
+                              aria-label={`Select ${event.title}`}
+                            />
+                          </TableCell>
+                        )}
                         <TableCell>
                           <div className="flex items-center gap-3">
                             {event.poster_public_url && (

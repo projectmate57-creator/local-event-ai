@@ -18,6 +18,7 @@ import SignInPage from "./pages/SignInPage";
 import DashboardPage from "./pages/DashboardPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
+import FAQPage from "./pages/FAQPage";
 import NotFound from "./pages/NotFound";
 import { CookieConsent } from "./components/CookieConsent";
 
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/faq" element={<FAQPage />} />
               <Route path="/rahul-bedjavalge" element={<AdminPage />} />
               <Route path="/ppt" element={<PitchPage />} />
               <Route path="*" element={<NotFound />} />

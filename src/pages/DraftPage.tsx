@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { ConfidenceChip } from "@/components/ConfidenceChip";
 import { EvidenceDrawer } from "@/components/EvidenceDrawer";
+import { DuplicateWarningDialog, DuplicateEvent } from "@/components/DuplicateWarningDialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Event } from "@/lib/types";
@@ -27,6 +28,9 @@ export default function DraftPage() {
 
   const [formData, setFormData] = useState<Partial<EventFormData>>({});
   const [isExtracting, setIsExtracting] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicates, setDuplicates] = useState<DuplicateEvent[]>([]);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
 
   // Separate date/time inputs (stored as local strings)
   const [startDate, setStartDate] = useState("");
@@ -118,6 +122,7 @@ export default function DraftPage() {
       return slug;
     },
     onSuccess: (slug) => {
+      setDuplicateDialogOpen(false);
       toast({ title: "Event published!" });
       navigate(`/events/${slug}`);
     },
@@ -129,6 +134,46 @@ export default function DraftPage() {
       });
     },
   });
+
+  const checkForDuplicates = async (): Promise<DuplicateEvent[]> => {
+    if (!formData.title || !formData.city || !formData.start_at) {
+      return [];
+    }
+
+    const { data, error } = await supabase.rpc("check_duplicate_events", {
+      p_title: formData.title,
+      p_city: formData.city,
+      p_start_at: formData.start_at,
+      p_exclude_id: id,
+    });
+
+    if (error) {
+      console.error("Error checking duplicates:", error);
+      return [];
+    }
+
+    return (data || []) as DuplicateEvent[];
+  };
+
+  const handlePublishClick = async () => {
+    setIsCheckingDuplicates(true);
+    try {
+      const foundDuplicates = await checkForDuplicates();
+      if (foundDuplicates.length > 0) {
+        setDuplicates(foundDuplicates);
+        setDuplicateDialogOpen(true);
+      } else {
+        // No duplicates, publish directly
+        publishMutation.mutate();
+      }
+    } catch (error) {
+      console.error("Error during duplicate check:", error);
+      // If check fails, proceed with publish
+      publishMutation.mutate();
+    } finally {
+      setIsCheckingDuplicates(false);
+    }
+  };
 
   const handleReExtract = async () => {
     if (!event) return;
@@ -535,11 +580,11 @@ export default function DraftPage() {
                 <span className="sm:hidden">Save</span>
               </Button>
               <Button
-                onClick={() => publishMutation.mutate()}
-                disabled={!isValid || publishMutation.isPending}
+                onClick={handlePublishClick}
+                disabled={!isValid || publishMutation.isPending || isCheckingDuplicates}
                 className="flex-1 sm:flex-initial h-11 sm:h-10 bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                {publishMutation.isPending ? (
+                {publishMutation.isPending || isCheckingDuplicates ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
@@ -550,6 +595,14 @@ export default function DraftPage() {
           </motion.div>
         </div>
       </section>
+
+      <DuplicateWarningDialog
+        open={duplicateDialogOpen}
+        onOpenChange={setDuplicateDialogOpen}
+        duplicates={duplicates}
+        onConfirm={() => publishMutation.mutate()}
+        isPublishing={publishMutation.isPending}
+      />
     </Layout>
   );
 }

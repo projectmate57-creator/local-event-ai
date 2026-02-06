@@ -1,41 +1,57 @@
 
-# Remove Stats Section from Homepage
+
+# Create Testing Guide Document
 
 ## Overview
-Remove the statistics section displaying "500+ Events Created", "10K+ Posters Scanned", and "50+ Cities" from the Index page hero section.
+Create a markdown document containing the complete Feature List and Manual Testing Guide for the TinyTinyEvents platform (excluding admin sections) that can be shared with the team lead for testing.
 
-## Changes Required
+## File to Create
 
-| File | Change |
-|------|--------|
-| `src/pages/Index.tsx` | Remove the stats section (lines ~130-149) and the `stats` array definition (lines ~48-52) |
+| File | Description |
+|------|-------------|
+| `docs/TESTING_GUIDE.md` | Complete feature list and manual testing guide document |
 
-## Implementation Details
+## Document Contents
 
-1. **Remove the `stats` array definition** (around line 48-52):
-```tsx
-// DELETE THIS:
-const stats = [
-  { value: "500+", label: "Events Created" },
-  { value: "10K+", label: "Posters Scanned" },
-  { value: "50+", label: "Cities" },
-];
-```
+The document will include:
 
-2. **Remove the stats display section** (around lines 130-149):
-```tsx
-// DELETE THIS entire motion.div block:
-<motion.div
-  initial={{ opacity: 0, y: 30 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 0.7, duration: 0.6 }}
-  className="mt-20 flex justify-center gap-12 border-t border-foreground/10 pt-12 sm:gap-20"
->
-  {stats.map((stat, i) => (
-    ...
-  ))}
-</motion.div>
-```
+1. **Feature List** - All platform features organized by category
+   - Public Event Discovery
+   - Event Detail Pages
+   - Age Verification System
+   - Authentication
+   - AI Poster Extraction
+   - User Dashboard
+   - AI Chatbot
+
+2. **Manual Testing Guide** - Structured test cases with:
+   - Test ID and name
+   - Steps to execute
+   - Expected results
+   - Pass/Fail checkboxes
+
+3. **Test Environment Info**
+   - Preview URL
+   - Published URL
+
+## Test Cases Included
+
+| ID | Test Area |
+|----|-----------|
+| TC-01 | Homepage Load & Navigation |
+| TC-02 | Event Browsing & Filtering |
+| TC-03 | Event Detail Page |
+| TC-04 | Age Gate - All Ages Event |
+| TC-05 | Age Gate - 18+ Event |
+| TC-06 | User Sign Up |
+| TC-07 | User Sign In |
+| TC-08 | Magic Link Sign In |
+| TC-09 | Google OAuth Sign In |
+| TC-10 | Poster Upload - File |
+| TC-11 | Poster Upload - URL |
+| TC-12 | Draft Editing & Publishing |
+| TC-13 | AI Chatbot |
 
 ## Result
-The homepage hero section will end with the call-to-action buttons, without the statistics bar below.
+A shareable markdown document ready to send to the team lead for manual testing verification.
+

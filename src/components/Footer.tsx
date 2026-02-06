@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarHeart, Linkedin, Twitter, Github, Mail } from "lucide-react";
+import { CalendarHeart, Linkedin, Twitter, Github } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -42,21 +42,21 @@ export function Footer() {
               </Link>
             </nav>
           </div>
-
-          {/* Contact */}
+          {/* Legal */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-foreground">Get in Touch</h4>
-            <div className="flex flex-col gap-2">
-              <a
-                href="mailto:hello@tinytinyevents.com"
-                className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
-              >
-                <Mail className="h-4 w-4" />
-                hello@tinytinyevents.com
-              </a>
-            </div>
+            <h4 className="font-semibold text-foreground">Legal</h4>
+            <nav className="flex flex-col gap-2">
+              <Link to="/privacy" className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                Privacy Policy
+              </Link>
+              <Link to="/terms" className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                Terms of Service
+              </Link>
+              <Link to="/contact" className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                Contact Us
+              </Link>
+            </nav>
           </div>
-
           {/* Social */}
           <div className="space-y-4">
             <h4 className="font-semibold text-foreground">Follow Us</h4>

@@ -151,7 +151,7 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
   const ownerId = user.id;
 
   // Check if user is admin
-  const { data: isAdmin = false } = useQuery({
+  const { data: isAdmin = false, isSuccess: isAdminResolved } = useQuery({
     queryKey: ["is-admin", user.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -162,8 +162,10 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
   });
 
   // Fetch events - admins see all, regular users see only their own
+  // Wait for admin status to be resolved before fetching events
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["admin-events", ownerId, isAdmin],
+    enabled: isAdminResolved,
     queryFn: async () => {
       if (isAdmin) {
         // Admins can see all events

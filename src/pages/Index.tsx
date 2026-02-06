@@ -53,11 +53,6 @@ export default function Index() {
     },
   ];
 
-  const stats = [
-    { value: "500+", label: "Events Created" },
-    { value: "10K+", label: "Posters Scanned" },
-    { value: "50+", label: "Cities" },
-  ];
 
   return (
     <Layout>
@@ -150,26 +145,6 @@ export default function Index() {
               </Link>
             </motion.div>
 
-            {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.6 }}
-              className="mt-20 flex justify-center gap-12 border-t border-foreground/10 pt-12 sm:gap-20"
-            >
-              {stats.map((stat, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8 + i * 0.1 }}
-                  className="text-center"
-                >
-                  <div className="text-3xl font-bold sm:text-4xl">{stat.value}</div>
-                  <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
-                </motion.div>
-              ))}
-            </motion.div>
           </motion.div>
         </div>
       </section>

@@ -10,7 +10,7 @@ import { Footer } from "@/components/Footer";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Event } from "@/lib/types";
+import { PublicEvent } from "@/lib/types";
 
 export default function Index() {
   const navigate = useNavigate();
@@ -20,15 +20,14 @@ export default function Index() {
     queryFn: async () => {
       const now = new Date().toISOString();
       const { data, error } = await supabase
-        .from("events")
+        .from("events_public")
         .select("*")
-        .eq("status", "published")
         .gte("start_at", now)
         .order("start_at", { ascending: true })
         .limit(6);
 
       if (error) throw error;
-      return data as Event[];
+      return data as PublicEvent[];
     },
   });
 

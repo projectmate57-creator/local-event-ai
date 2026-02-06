@@ -26,7 +26,7 @@ export const eventExtractionSchema = z.object({
 
 export type EventExtraction = z.infer<typeof eventExtractionSchema>;
 
-// Database event type
+// Database event type (full, for owners only)
 export interface Event {
   id: string;
   owner_id: string;
@@ -48,6 +48,26 @@ export interface Event {
   confidence_overall: number | null;
   confidence_json: Record<string, number> | null;
   evidence_json: Record<string, string> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Public event type (excludes sensitive fields: owner_id, source_url, confidence, evidence, poster_path)
+export interface PublicEvent {
+  id: string;
+  status: "draft" | "published";
+  slug: string | null;
+  title: string;
+  start_at: string;
+  end_at: string | null;
+  timezone: string;
+  city: string;
+  venue: string | null;
+  address: string | null;
+  description: string | null;
+  ticket_url: string | null;
+  tags: string[] | null;
+  poster_public_url: string | null;
   created_at: string;
   updated_at: string;
 }

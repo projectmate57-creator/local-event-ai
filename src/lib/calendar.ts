@@ -1,7 +1,7 @@
-import { Event } from "./types";
+import { Event, PublicEvent } from "./types";
 import { format, parseISO } from "date-fns";
 
-export function generateGoogleCalendarUrl(event: Event): string {
+export function generateGoogleCalendarUrl(event: Event | PublicEvent): string {
   const startDate = parseISO(event.start_at);
   const endDate = event.end_at ? parseISO(event.end_at) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // Default 2 hours
 
@@ -19,7 +19,7 @@ export function generateGoogleCalendarUrl(event: Event): string {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-export function generateICSContent(event: Event): string {
+export function generateICSContent(event: Event | PublicEvent): string {
   const startDate = parseISO(event.start_at);
   const endDate = event.end_at ? parseISO(event.end_at) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
 
@@ -45,7 +45,7 @@ END:VCALENDAR`;
   return icsContent;
 }
 
-export function downloadICS(event: Event): void {
+export function downloadICS(event: Event | PublicEvent): void {
   const icsContent = generateICSContent(event);
   const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);

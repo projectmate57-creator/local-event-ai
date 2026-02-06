@@ -80,12 +80,11 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Fetch published events
+    // Fetch published events from the public view (excludes sensitive fields)
     const now = new Date().toISOString();
     const { data: events } = await supabase
-      .from("events")
+      .from("events_public")
       .select("id, title, slug, city, start_at, venue, tags")
-      .eq("status", "published")
       .gte("start_at", now)
       .order("start_at", { ascending: true })
       .limit(50);

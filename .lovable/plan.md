@@ -1,132 +1,185 @@
 
 
-# Multi-Day Event Display & Floating Date Feature
+# Age Verification & Content Moderation Plan
 
 ## Overview
-Enhance event date display to better communicate multi-day events and add a floating date/time element on event detail pages for easy visibility.
+
+This plan implements a comprehensive age verification and content moderation system to detect and properly handle 18+ events (clubs, adult entertainment, alcohol-focused events) as well as flag potentially illegal content during AI extraction.
 
 ---
 
-## What We Will Build
+## What We'll Build
 
-### 1. Improved Multi-Day Event Formatting
+### 1. AI Content Classification
+The AI extraction process will be enhanced to:
+- Detect age-restricted content (18+, 21+) from event posters
+- Classify events by age requirement (all ages, 16+, 18+, 21+)
+- Flag potentially illegal or harmful content for review
+- Identify event categories that typically require age verification
 
-**Current behavior:**
-- Shows: `Feb 6, 2026 at 10:00 AM - Mar 6 at 10:00 PM`
+### 2. Age Gate for Visitors
+When someone tries to view an 18+ event:
+- A modal appears asking them to confirm they are 18+
+- This is stored in their browser session
+- Clear visual indicators (badges) show age-restricted events
 
-**New behavior with duration labels:**
-- **Same day:** `Feb 6, 2026 at 10:00 AM - 6:00 PM`
-- **2 days:** `Feb 6 - 7, 2026 (2 days)`
-- **3-6 days:** `Feb 6 - 10, 2026 (5 days)`
-- **1 week:** `Feb 6 - 13, 2026 (1 week)`
-- **2+ weeks:** `Feb 6 - 20, 2026 (2 weeks)`
-- **Month-long:** `Feb 6 - Mar 6, 2026 (1 month)`
+### 3. Content Moderation for Uploaders
+During the draft review process:
+- Show the AI-detected age restriction clearly
+- Allow users to adjust the age restriction if AI got it wrong
+- Warn if content might violate platform guidelines
+- Block publishing of flagged illegal content
 
-### 2. Floating Date Card on Event Page
+---
 
-A sticky card that remains visible when scrolling on the event detail page:
+## Technical Implementation
+
+### Database Changes
+
+New columns on the `events` table:
 
 ```text
-+-----------------------------------+
-|  WHEN                             |
-|  Feb 6 - Mar 6, 2026              |
-|  1 month long | Europe/Berlin     |
-+-----------------------------------+
++------------------------+----------+----------------------------------------+
+| Column                 | Type     | Purpose                                |
++------------------------+----------+----------------------------------------+
+| age_restriction        | text     | 'all_ages', '16+', '18+', '21+'       |
+| content_flags          | text[]   | ['adult', 'alcohol', 'cannabis', etc] |
+| moderation_status      | text     | 'pending', 'approved', 'rejected'     |
+| moderation_notes       | text     | Admin notes for rejected content      |
++------------------------+----------+----------------------------------------+
 ```
 
-**Behavior:**
-- Floats at top of screen when user scrolls past the main date section
-- Shows condensed date + duration badge
-- Mobile: appears as a slim bar at top
-- Desktop: small floating card in corner
+Also update `events_public` view to expose `age_restriction` (but NOT content_flags or moderation details).
+
+### AI Extraction Enhancement
+
+Update the extraction edge function to detect:
+- Explicit age requirements on posters ("18+", "21+", "Adults Only")
+- Venue types (nightclubs, bars typically require 18+)
+- Content indicators (alcohol brands, adult entertainment cues)
+- Illegal activity indicators for flagging
+
+The AI will return:
+```json
+{
+  "age_restriction": "18+",
+  "content_flags": ["nightclub", "alcohol"],
+  "moderation_warning": null
+}
+```
+
+### New Components
+
+1. **AgeGateModal** - Displays when viewing 18+ events
+2. **AgeRestrictionBadge** - Visual indicator on event cards
+3. **ContentModerationPanel** - For admin review of flagged events
+4. **AgeRestrictionSelector** - For draft page to override AI detection
+
+### Page Updates
+
+| Page | Changes |
+|------|---------|
+| DraftPage | Add age restriction selector, show detected flags |
+| EventDetailPage | Add age gate modal for 18+ events |
+| EventCard | Show age restriction badge |
+| EventsPage | Optional filter to hide 18+ events |
+| AdminPage | Content moderation queue for flagged events |
+| FAQPage | Add FAQ about age-restricted events |
 
 ---
+
+## User Flows
+
+### Viewing an 18+ Event (New Visitor)
+
+```text
+User clicks event card
+       |
+       v
+[Age Gate Modal]
+"This event is for ages 18 and over.
+ Please confirm you are 18+ to continue."
+       |
+   [Confirm] --> Event page loads, age verified stored in session
+   [Cancel]  --> Returns to events list
+```
+
+### Uploading an 18+ Event (Poster Uploader)
+
+```text
+User uploads poster
+       |
+       v
+AI extracts details + detects "18+ event"
+       |
+       v
+Draft page shows:
+- Age restriction badge (editable)
+- Content classification chips
+- Warning if content needs review
+       |
+       v
+User reviews, adjusts if needed, publishes
+```
+
+### Flagged Content (Illegal/Harmful)
+
+```text
+AI detects problematic content
+       |
+       v
+Event saved with moderation_status = 'pending'
+       |
+       v
+User sees: "This event requires manual review before publishing"
+       |
+       v
+Admin reviews in moderation queue
+   [Approve] --> Event can be published
+   [Reject]  --> User notified, event stays draft
+```
+
+---
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/components/AgeGateModal.tsx` | Age verification modal for 18+ events |
+| `src/components/AgeRestrictionBadge.tsx` | Visual badge showing age requirement |
+| `src/components/AgeRestrictionSelector.tsx` | Dropdown for draft page |
+| `src/components/ContentModerationPanel.tsx` | Admin review panel |
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/lib/date.ts` | Add `getEventDuration()` and `formatEventDateWithDuration()` functions |
-| `src/pages/EventDetailPage.tsx` | Add floating date component with scroll detection |
-| `src/components/EventCard.tsx` | Show duration badge for multi-day events |
-
-## Files to Create
-
-| File | Description |
-|------|-------------|
-| `src/components/FloatingEventDate.tsx` | Reusable floating date component |
-
----
-
-## Technical Details
-
-### New Date Utility Functions
-
-```text
-getEventDuration(start, end):
-  - Calculates days between start and end
-  - Returns: { days: number, label: string }
-  - Labels: "2 days", "1 week", "2 weeks", "1 month", etc.
-
-formatEventDateWithDuration(start, end):
-  - Returns formatted date range with duration
-  - Example: "Feb 6 - Mar 6, 2026 (1 month)"
-```
-
-### Floating Date Component
-
-**Features:**
-- Uses `useState` + scroll event listener to detect when to show
-- Shows after scrolling past ~200px (where main date section ends)
-- Smooth fade-in animation with framer-motion
-- Fixed position at top-right (desktop) or full-width bar (mobile)
-- Includes "Add to Calendar" quick action button
-
-### Event Card Updates
-
-For multi-day events, show a small badge:
-```text
-+------------------+
-| [poster image]   |
-| Title            |
-| Feb 6 at 10 AM   |
-| [2 days] Berlin  |
-+------------------+
-```
+| `supabase/functions/extract/index.ts` | Add age/content detection to AI prompt |
+| `src/lib/types.ts` | Add age restriction types |
+| `src/pages/DraftPage.tsx` | Add age restriction UI |
+| `src/pages/EventDetailPage.tsx` | Add age gate logic |
+| `src/components/EventCard.tsx` | Show age badge |
+| `src/pages/EventsPage.tsx` | Add age filter option |
+| `src/pages/AdminPage.tsx` | Add moderation queue |
+| `src/pages/FAQPage.tsx` | Add age verification FAQ |
 
 ---
 
-## Visual Examples
+## Security Considerations
 
-**Duration badges:**
-- `2 days` - For 2-day events
-- `5 days` - For 3-6 day events  
-- `1 week` - For 7-day events
-- `2 weeks` - For 8-14 day events
-- `1 month` - For 28-31 day events
-
-**Floating card (desktop):**
-```text
-    +-------------------------+
-    | Feb 6 - 13              |
-    | 1 week | [Add to Cal]   |
-    +-------------------------+
-```
-
-**Floating bar (mobile):**
-```text
-+---------------------------------------+
-| Feb 6 - 13 (1 week) | [Calendar icon] |
-+---------------------------------------+
-```
+1. **Age gate is advisory only** - We don't verify actual age, just get user acknowledgment (industry standard for event listings)
+2. **Session-based storage** - Age confirmation stored in sessionStorage, clears when browser closes
+3. **Server-side validation** - Moderation status enforced via database, not just frontend
+4. **Admin override** - Admins can adjust age restrictions and approve/reject flagged content
+5. **Audit trail** - Moderation decisions logged with admin ID and timestamp
 
 ---
 
-## Implementation Notes
+## FAQ Updates
 
-- Duration calculation uses `differenceInDays` from date-fns
-- Floating element uses `position: fixed` with `z-index` above content
-- Respects dark/light theme with proper colors
-- Accessible with proper ARIA labels
-- No changes to database needed
+New questions to add:
+- "What are age-restricted events?"
+- "How does age verification work?"
+- "What happens if my event is flagged for review?"
+- "Why was my event rejected?"
 

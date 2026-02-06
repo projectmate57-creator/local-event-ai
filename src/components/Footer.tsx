@@ -52,6 +52,9 @@ export function Footer() {
               <Link to="/terms" className="text-sm text-muted-foreground transition-colors hover:text-primary">
                 Terms of Service
               </Link>
+              <Link to="/faq" className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                FAQ
+              </Link>
               <Link to="/contact" className="text-sm text-muted-foreground transition-colors hover:text-primary">
                 Contact Us
               </Link>

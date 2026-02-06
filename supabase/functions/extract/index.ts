@@ -162,8 +162,32 @@ serve(async (req) => {
     "ticket_url": 0.0-1.0,
     "description": 0.0-1.0
   },
-  "evidence": { "fieldName": "exact text from poster that supports this field" }
+  "evidence": { "fieldName": "exact text from poster that supports this field" },
+  "age_restriction": "all_ages" | "16+" | "18+" | "21+",
+  "content_flags": ["nightclub", "alcohol", "adult", "cannabis", "gambling", "tobacco"] or [],
+  "moderation_warning": "string if illegal/harmful content detected, otherwise null"
 }
+
+AGE RESTRICTION RULES:
+- Look for explicit age requirements on the poster ("18+", "21+", "Adults Only", "Ab 18", "FSK 18")
+- Nightclubs, bars, and late-night venues typically require 18+
+- Events featuring alcohol prominently should be marked 18+ (or 21+ in US context)
+- Adult entertainment, strip clubs, cannabis events should be 18+ or 21+
+- Family events, community gatherings, daytime markets are typically "all_ages"
+- If unsure, default to "all_ages" but add relevant content_flags
+
+CONTENT FLAGS:
+- "nightclub": Late-night dance venue, club
+- "alcohol": Prominent alcohol branding, bar events, wine tastings
+- "adult": Adult entertainment, explicit content
+- "cannabis": Cannabis-related events
+- "gambling": Casino, poker events
+- "tobacco": Hookah bars, cigar events
+
+MODERATION WARNING:
+- Set moderation_warning if you detect potentially illegal activity (drug sales, illegal gambling, violence promotion)
+- Set moderation_warning if content appears to violate platform guidelines (extreme content, hate speech)
+- Otherwise set to null
 
 IMPORTANT DATE RULES:
 - The current year is ${currentYear}. If no year is visible on the poster, assume ${currentYear}.
@@ -237,8 +261,15 @@ IMPORTANT DATE RULES:
     "start_at": 0.0-1.0,
     "city": 0.0-1.0
   },
-  "evidence": { "fieldName": "exact text that supports this field" }
+  "evidence": { "fieldName": "exact text that supports this field" },
+  "age_restriction": "all_ages" | "16+" | "18+" | "21+",
+  "content_flags": ["nightclub", "alcohol", "adult", "cannabis", "gambling", "tobacco"] or [],
+  "moderation_warning": "string if illegal/harmful content detected, otherwise null"
 }
+
+AGE RESTRICTION: Look for explicit age limits. Nightclubs/bars = 18+. Adult content = 18+/21+. Default to "all_ages".
+CONTENT FLAGS: Add relevant flags for nightclub, alcohol, adult, cannabis, gambling, tobacco content.
+MODERATION WARNING: Set if illegal activity or policy violations detected, otherwise null.
 
 IMPORTANT: The current year is ${currentYear}. If no year is found, assume ${currentYear}.
 
@@ -307,6 +338,9 @@ ${textContent}`;
           title: "Placeholder - please update",
           city: "Default city - please verify",
         },
+        age_restriction: "all_ages",
+        content_flags: [],
+        moderation_warning: null,
       };
     }
 
@@ -356,6 +390,9 @@ ${textContent}`;
       extractedData.evidence = { ...extractedData.evidence, start_at: "Date parsing failed - please set manually" };
     }
 
+    // Determine moderation status based on warning
+    const moderationStatus = extractedData.moderation_warning ? "pending" : "approved";
+
     // Update the event with extracted data
     const { error: updateError } = await supabase
       .from("events")
@@ -373,6 +410,9 @@ ${textContent}`;
         confidence_overall: extractedData.confidence?.overall,
         confidence_json: extractedData.confidence,
         evidence_json: extractedData.evidence,
+        age_restriction: extractedData.age_restriction || "all_ages",
+        content_flags: extractedData.content_flags || [],
+        moderation_status: moderationStatus,
       })
       .eq("id", eventId);
 

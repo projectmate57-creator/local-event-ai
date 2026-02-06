@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -20,10 +20,14 @@ import { formatEventDateRange } from "@/lib/date";
 import { generateGoogleCalendarUrl, downloadICS } from "@/lib/calendar";
 import { ShareButtons } from "@/components/ShareButtons";
 import { FloatingEventDate } from "@/components/FloatingEventDate";
+import { AgeGateModal, useAgeVerification } from "@/components/AgeGateModal";
+import { AgeRestrictionBadge } from "@/components/AgeRestrictionBadge";
 
 export default function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const dateInfoRef = useRef<HTMLDivElement>(null);
+  const { isVerified, verify } = useAgeVerification();
+  const [showAgeGate, setShowAgeGate] = useState(false);
 
   const { data: event, isLoading, error } = useQuery({
     queryKey: ["event", slug],
@@ -49,6 +53,15 @@ export default function EventDetailPage() {
     },
     enabled: !!slug,
   });
+
+  // Check if age gate is needed
+  useEffect(() => {
+    if (event && (event.age_restriction === "18+" || event.age_restriction === "21+")) {
+      if (!isVerified) {
+        setShowAgeGate(true);
+      }
+    }
+  }, [event, isVerified]);
 
   // Track page view via rate-limited edge function
   useEffect(() => {
@@ -112,9 +125,21 @@ export default function EventDetailPage() {
   }
 
   const posterUrl = event.poster_public_url || "/placeholder.svg";
+  const needsAgeGate = (event.age_restriction === "18+" || event.age_restriction === "21+") && !isVerified;
 
   return (
     <Layout>
+      {/* Age Gate Modal */}
+      {showAgeGate && needsAgeGate && (
+        <AgeGateModal
+          ageRestriction={event.age_restriction}
+          eventTitle={event.title}
+          onVerified={() => {
+            verify();
+            setShowAgeGate(false);
+          }}
+        />
+      )}
       <FloatingEventDate event={event} triggerRef={dateInfoRef} />
       <article className="container mx-auto px-4 py-12">
         {/* Back button */}
@@ -154,9 +179,14 @@ export default function EventDetailPage() {
             className="space-y-6"
           >
             <div>
-              <h1 className="mb-4 text-3xl font-bold leading-tight text-foreground lg:text-4xl">
-                {event.title}
-              </h1>
+              <div className="flex items-center gap-3 mb-4">
+                <h1 className="text-3xl font-bold leading-tight text-foreground lg:text-4xl">
+                  {event.title}
+                </h1>
+                {event.age_restriction && event.age_restriction !== "all_ages" && (
+                  <AgeRestrictionBadge ageRestriction={event.age_restriction} size="lg" />
+                )}
+              </div>
 
               {/* Tags */}
               {event.tags && event.tags.length > 0 && (

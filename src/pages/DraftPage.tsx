@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Save, Send, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, Save, Send, RefreshCw, AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,10 @@ import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { ConfidenceChip } from "@/components/ConfidenceChip";
 import { EvidenceDrawer } from "@/components/EvidenceDrawer";
 import { DuplicateWarningDialog, DuplicateEvent } from "@/components/DuplicateWarningDialog";
+import { AgeRestrictionSelector } from "@/components/AgeRestrictionSelector";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Event } from "@/lib/types";
+import { Event, AgeRestriction } from "@/lib/types";
 import { generateSlug } from "@/lib/slug";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +74,10 @@ export default function DraftPage() {
         confidence_json: event.confidence_json,
         evidence_json: event.evidence_json,
         slug: event.slug,
+        age_restriction: event.age_restriction,
+        content_flags: event.content_flags,
+        moderation_status: event.moderation_status,
+        moderation_notes: event.moderation_notes,
       });
 
       setStartDate(formatDateLocal(event.start_at));
@@ -215,13 +220,17 @@ export default function DraftPage() {
     city: !!formData.city?.trim(),
     ticket_url: !formData.ticket_url || isValidUrl(formData.ticket_url),
     future_date: !isPastEvent, // Warning for past events
+    moderation: formData.moderation_status !== "rejected", // Block rejected content
   };
 
   // Core validation (required for publishing)
   const coreValidation = validationChecks.title && validationChecks.start_at && validationChecks.city && validationChecks.ticket_url;
   
+  // Block publishing if moderation rejected OR pending
+  const canPublish = coreValidation && formData.moderation_status !== "rejected" && formData.moderation_status !== "pending";
+  
   // Allow publishing past events with warning
-  const isValid = coreValidation;
+  const isValid = canPublish;
 
   const getFieldConfidence = (field: string): number | undefined => {
     if (!formData.confidence_json) return undefined;
@@ -512,6 +521,42 @@ export default function DraftPage() {
                 placeholder="hackathon, tech, berlin"
               />
             </div>
+
+            {/* Age Restriction */}
+            <AgeRestrictionSelector
+              value={(formData.age_restriction as AgeRestriction) || "all_ages"}
+              onChange={(value) => updateField("age_restriction", value)}
+              contentFlags={formData.content_flags as string[] | null}
+              moderationWarning={formData.moderation_notes}
+            />
+
+            {/* Moderation Status Warning */}
+            {formData.moderation_status === "pending" && (
+              <div className="flex items-start gap-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
+                <ShieldAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" />
+                <div>
+                  <h4 className="font-medium text-foreground">Pending Review</h4>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    This event requires manual review before it can be published. Our team will review it shortly.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {formData.moderation_status === "rejected" && (
+              <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+                <ShieldAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+                <div>
+                  <h4 className="font-medium text-destructive">Event Rejected</h4>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    This event has been rejected and cannot be published.
+                    {formData.moderation_notes && (
+                      <span className="block mt-1">Reason: {formData.moderation_notes}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Validation Checklist */}
             <div className="rounded-lg border border-border bg-muted/30 p-4">

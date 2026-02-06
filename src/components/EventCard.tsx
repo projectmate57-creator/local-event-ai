@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Event, PublicEvent } from "@/lib/types";
 import { formatEventDate, getEventDuration } from "@/lib/date";
 import { Badge } from "@/components/ui/badge";
+import { AgeRestrictionBadge } from "@/components/AgeRestrictionBadge";
 
 interface EventCardProps {
   event: Event | PublicEvent;
@@ -32,6 +33,13 @@ export function EventCard({ event, index = 0 }: EventCardProps) {
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            
+            {/* Age Restriction Badge */}
+            {event.age_restriction && event.age_restriction !== "all_ages" && (
+              <div className="absolute top-2 left-2">
+                <AgeRestrictionBadge ageRestriction={event.age_restriction} size="md" />
+              </div>
+            )}
             
             {/* Hover arrow */}
             <motion.div

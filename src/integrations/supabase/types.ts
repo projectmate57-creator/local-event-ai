@@ -53,14 +53,18 @@ export type Database = {
       events: {
         Row: {
           address: string | null
+          age_restriction: string
           city: string
           confidence_json: Json | null
           confidence_overall: number | null
+          content_flags: string[] | null
           created_at: string
           description: string | null
           end_at: string | null
           evidence_json: Json | null
           id: string
+          moderation_notes: string | null
+          moderation_status: string
           owner_id: string
           poster_path: string | null
           poster_public_url: string | null
@@ -77,14 +81,18 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          age_restriction?: string
           city: string
           confidence_json?: Json | null
           confidence_overall?: number | null
+          content_flags?: string[] | null
           created_at?: string
           description?: string | null
           end_at?: string | null
           evidence_json?: Json | null
           id?: string
+          moderation_notes?: string | null
+          moderation_status?: string
           owner_id: string
           poster_path?: string | null
           poster_public_url?: string | null
@@ -101,14 +109,18 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          age_restriction?: string
           city?: string
           confidence_json?: Json | null
           confidence_overall?: number | null
+          content_flags?: string[] | null
           created_at?: string
           description?: string | null
           end_at?: string | null
           evidence_json?: Json | null
           id?: string
+          moderation_notes?: string | null
+          moderation_status?: string
           owner_id?: string
           poster_path?: string | null
           poster_public_url?: string | null
@@ -151,6 +163,7 @@ export type Database = {
       events_public: {
         Row: {
           address: string | null
+          age_restriction: string | null
           city: string | null
           created_at: string | null
           description: string | null
@@ -169,6 +182,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          age_restriction?: string | null
           city?: string | null
           created_at?: string | null
           description?: string | null
@@ -187,6 +201,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          age_restriction?: string | null
           city?: string | null
           created_at?: string | null
           description?: string | null

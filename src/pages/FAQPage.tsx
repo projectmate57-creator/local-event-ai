@@ -42,6 +42,21 @@ const FAQ_ITEMS = [
       "Yes! After the AI extracts information from your poster, you can review and edit all details before publishing. You can also edit your published events from your dashboard.",
   },
   {
+    question: "What are age-restricted events?",
+    answer:
+      "Some events are marked as 18+ or 21+ because they take place at venues like nightclubs, bars, or involve adult content. Our AI automatically detects these restrictions from poster content, venue type, and explicit age requirements. You'll see a badge on these events, and you'll need to confirm your age before viewing details.",
+  },
+  {
+    question: "How does age verification work?",
+    answer:
+      "When you try to view an 18+ or 21+ event, you'll be asked to confirm that you meet the age requirement. This is stored in your browser session only (it clears when you close the browser). We don't collect or store any personal identification - this is simply an acknowledgment that you meet the age requirement, similar to age gates on other websites.",
+  },
+  {
+    question: "What happens if my event is flagged for review?",
+    answer:
+      "If our AI detects potentially problematic content, your event will be held for manual review before it can be published. You'll see a message explaining this on your draft page. Our moderation team will review the content and either approve it for publishing or provide feedback if changes are needed.",
+  },
+  {
     question: "I'm an event organizer. Can I remove my event?",
     answer:
       "Absolutely. If you'd like your event removed from our platform, please contact us through our contact form and we'll remove it promptly. We respect organizers' wishes regarding how their events are promoted.",
@@ -49,7 +64,7 @@ const FAQ_ITEMS = [
   {
     question: "What types of events can I post?",
     answer:
-      "Any public event! Concerts, festivals, art exhibitions, community gatherings, sports events, workshops, markets, and more. The only requirement is that the event is publicly advertised (e.g., on a poster in a public space).",
+      "Any public event! Concerts, festivals, art exhibitions, community gatherings, sports events, workshops, markets, and more. The only requirement is that the event is publicly advertised (e.g., on a poster in a public space). Events promoting illegal activity will be rejected.",
   },
   {
     question: "How do I report a fake or scam event?",

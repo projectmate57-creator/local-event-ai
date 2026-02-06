@@ -40,14 +40,10 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  if (!user) {
-    navigate("/signin");
-    return null;
-  }
-
-  // Fetch user's events
+  // Fetch user's events - must be before any conditional returns
   const { data: events, isLoading: eventsLoading } = useQuery({
-    queryKey: ["my-events", user.id],
+    queryKey: ["my-events", user?.id],
+    enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("events")
@@ -62,7 +58,8 @@ export default function DashboardPage() {
 
   // Fetch analytics summary
   const { data: analytics } = useQuery({
-    queryKey: ["analytics-summary", user.id],
+    queryKey: ["analytics-summary", user?.id],
+    enabled: !!user,
     queryFn: async () => {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -71,7 +68,7 @@ export default function DashboardPage() {
       const { data: userEvents } = await supabase
         .from("events")
         .select("id, title")
-        .eq("owner_id", user.id);
+        .eq("owner_id", user!.id);
 
       if (!userEvents || userEvents.length === 0) {
         return { views: 0, clicks: 0, topEvents: [] };
@@ -132,6 +129,12 @@ export default function DashboardPage() {
       });
     },
   });
+
+  // Redirect if not logged in - after all hooks
+  if (!user) {
+    navigate("/signin");
+    return null;
+  }
 
   const drafts = events?.filter((e) => e.status === "draft") || [];
   const published = events?.filter((e) => e.status === "published") || [];

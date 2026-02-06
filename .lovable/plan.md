@@ -1,103 +1,116 @@
 
-# Authentication Implementation Plan
+# Duplicate Event Detection System
 
 ## Overview
-This plan adds user authentication to TinyTinyEvents so users can:
-- Sign in with email/password or Google
-- Create events that are associated with their account
-- View their own events in a personal dashboard
+
+When publishing an event, the system will check for existing published events with similar characteristics and warn the user if potential duplicates are found. This prevents redundant event postings in the public listing.
 
 ---
 
-## What Will Change
+## How It Works
 
-### 1. Sign In Page
-A new `/signin` page with:
-- Email and password login
-- Email and password signup
-- Google sign-in option (one click)
-- Magic link option for passwordless login
+Before an event is published, the system checks for matches based on:
 
-### 2. Navigation Updates
-The header will show:
-- "Sign In" button when logged out
-- User avatar/email and "Dashboard" link when logged in
-- Sign out option
+1. **Same city** (case-insensitive exact match)
+2. **Same date** (within 24-hour window of start time)
+3. **Similar title** (case-insensitive substring or fuzzy match)
 
-### 3. Personal Dashboard
-The existing dashboard at `/dashboard` will display:
-- Your draft events (unpublished)
-- Your published events
-- Basic analytics (views, clicks)
+If duplicates are found, a warning dialog appears showing the matching events. The user can then:
+- **Cancel** - Go back and review/edit the event
+- **Publish Anyway** - Override the warning and publish
 
-### 4. Event Ownership
-When you upload a poster:
-- The event will be linked to your account
-- Only you can edit your own drafts
-- Only you can delete your own events
+---
+
+## User Experience
+
+```text
+User clicks "Publish"
+        |
+        v
++------------------+
+| Check for        |
+| duplicates       |
++------------------+
+        |
+   +----+----+
+   |         |
+   v         v
+No match   Match found
+   |         |
+   v         v
+Publish    Show Warning Dialog
+           +------------------------+
+           | Potential Duplicate    |
+           | Detected!              |
+           |                        |
+           | "Tech Meetup Berlin"   |
+           | Feb 15, 2026 @ 6:00 PM |
+           | Berlin                 |
+           |                        |
+           | [Cancel] [Publish Anyway]
+           +------------------------+
+```
+
+---
+
+## Changes Summary
+
+| Component | Change |
+|-----------|--------|
+| Database | Add `check_duplicate_events` function |
+| DraftPage.tsx | Intercept publish, run check, show dialog |
+| New Component | `DuplicateWarningDialog.tsx` |
 
 ---
 
 ## Technical Details
 
-### Database Changes
-Update Row Level Security (RLS) policies on the `events` table:
-- **INSERT**: Only authenticated users can create events (linked to their user ID)
-- **UPDATE**: Only the event owner can edit their events
-- **DELETE**: Only the event owner can delete their events
-- **SELECT**: Anyone can view published events; owners can view their own drafts
+### 1. Database Function
 
-Update storage policies for the `posters` bucket:
-- Only authenticated users can upload files
+Create a PostgreSQL function that queries `events_public` for potential duplicates:
 
-### New Routes
-| Route | Purpose |
-|-------|---------|
-| `/signin` | Sign in/Sign up page |
-| `/dashboard` | Personal events dashboard |
-
-### File Changes
-| File | Change |
-|------|--------|
-| `src/App.tsx` | Add AuthProvider wrapper and new routes |
-| `src/components/Layout.tsx` | Add auth-aware navigation (Sign In / User menu) |
-| `src/pages/UploadPage.tsx` | Require authentication, use actual user ID |
-| `src/pages/DraftPage.tsx` | Verify user owns the draft |
-| `src/hooks/useAuth.tsx` | Already exists, will be used |
-| `src/pages/SignInPage.tsx` | Already exists, will be connected |
-| `src/pages/DashboardPage.tsx` | Already exists, will be connected |
-
-### Authentication Flow
-```text
-User visits /upload
-    |
-    v
-Is user logged in? ----No----> Redirect to /signin
-    |
-   Yes
-    |
-    v
-Upload poster with user's ID as owner_id
-    |
-    v
-Redirect to /drafts/{id} to edit
-    |
-    v
-Publish event -> Visible on /events
+```sql
+CREATE FUNCTION public.check_duplicate_events(
+  p_title TEXT,
+  p_city TEXT,
+  p_start_at TIMESTAMPTZ,
+  p_exclude_id UUID DEFAULT NULL
+)
+RETURNS TABLE (
+  id UUID,
+  title TEXT,
+  city TEXT,
+  start_at TIMESTAMPTZ,
+  venue TEXT
+)
 ```
 
+**Matching criteria:**
+- City matches (case-insensitive)
+- Start date within +/- 24 hours
+- Title contains similar words (case-insensitive ILIKE)
+
+### 2. DuplicateWarningDialog Component
+
+A new alert dialog component that:
+- Displays list of potential duplicate events
+- Shows event title, date, and venue for each match
+- Provides "Cancel" and "Publish Anyway" action buttons
+
+### 3. Publish Flow Integration
+
+Modify `DraftPage.tsx` to:
+1. Add state for dialog visibility and duplicate results
+2. Create a `checkDuplicates` async function
+3. Intercept the Publish button click
+4. Show dialog if duplicates found
+5. Allow user to confirm or cancel
+
 ---
 
-## Security Considerations
-- Passwords validated (minimum 6 characters)
-- Email format validation
-- Server-side RLS policies enforce ownership
-- No sensitive data exposed in client code
+## Implementation Order
 
----
-
-## After Implementation
-You will need to:
-1. Test the sign up flow with a test email
-2. Optionally disable "Confirm email" in authentication settings to speed up testing
-3. Try creating an event while logged in to verify ownership works
+1. **Database migration** - Create the `check_duplicate_events` function
+2. **Create dialog component** - `DuplicateWarningDialog.tsx`
+3. **Update DraftPage** - Integrate duplicate check into publish flow
+4. **Test end-to-end** - Verify the flow works correctly

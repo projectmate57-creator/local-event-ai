@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Tag, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Tag, ArrowRight, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Event, PublicEvent } from "@/lib/types";
-import { formatEventDate } from "@/lib/date";
+import { formatEventDate, getEventDuration } from "@/lib/date";
 import { Badge } from "@/components/ui/badge";
 
 interface EventCardProps {
@@ -12,6 +12,7 @@ interface EventCardProps {
 
 export function EventCard({ event, index = 0 }: EventCardProps) {
   const posterUrl = event.poster_public_url || "/placeholder.svg";
+  const duration = getEventDuration(event.start_at, event.end_at);
 
   return (
     <motion.div
@@ -58,6 +59,12 @@ export function EventCard({ event, index = 0 }: EventCardProps) {
                 <span className="truncate">
                   {event.venue ? `${event.venue}, ${event.city}` : event.city}
                 </span>
+                {duration && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    <Clock className="mr-1 h-3 w-3" />
+                    {duration.label}
+                  </Badge>
+                )}
               </div>
             </div>
 

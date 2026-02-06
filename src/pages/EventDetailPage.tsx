@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -19,9 +19,11 @@ import { PublicEvent } from "@/lib/types";
 import { formatEventDateRange } from "@/lib/date";
 import { generateGoogleCalendarUrl, downloadICS } from "@/lib/calendar";
 import { ShareButtons } from "@/components/ShareButtons";
+import { FloatingEventDate } from "@/components/FloatingEventDate";
 
 export default function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
+  const dateInfoRef = useRef<HTMLDivElement>(null);
 
   const { data: event, isLoading, error } = useQuery({
     queryKey: ["event", slug],
@@ -113,6 +115,7 @@ export default function EventDetailPage() {
 
   return (
     <Layout>
+      <FloatingEventDate event={event} triggerRef={dateInfoRef} />
       <article className="container mx-auto px-4 py-12">
         {/* Back button */}
         <motion.div
@@ -169,7 +172,7 @@ export default function EventDetailPage() {
             </div>
 
             {/* Event info */}
-            <div className="space-y-4 rounded-xl border border-border bg-muted/30 p-6">
+            <div ref={dateInfoRef} className="space-y-4 rounded-xl border border-border bg-muted/30 p-6">
               <div className="flex items-start gap-3">
                 <Calendar className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
                 <div>

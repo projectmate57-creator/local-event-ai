@@ -1,55 +1,47 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, LogIn } from "lucide-react";
+import { Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { FileUpload } from "@/components/FileUpload";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Progress } from "@/components/ui/progress";
+
+type UploadStep = "idle" | "screening" | "extracting" | "done";
 
 export default function UploadPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadStep, setUploadStep] = useState<UploadStep>("idle");
+  const [rejectionMessage, setRejectionMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
 
-  // Get the actual user ID for ownership
-  const ownerId = user?.id;
+  const progressValue = uploadStep === "screening" ? 33 : uploadStep === "extracting" ? 66 : uploadStep === "done" ? 100 : 0;
 
-  const handleFileSelect = async (file: File) => {
-    if (!ownerId) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to upload events",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  // Authenticated user flow (existing behavior)
+  const handleAuthenticatedUpload = async (file: File) => {
     setIsLoading(true);
+    setUploadStep("extracting");
 
     try {
       const fileExt = file.name.split(".").pop();
-      const filePath = `${ownerId}/${Date.now()}.${fileExt}`;
+      const filePath = `${user!.id}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("posters")
         .upload(filePath, file);
-
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from("posters")
-        .getPublicUrl(filePath);
-
+      const { data: urlData } = supabase.storage.from("posters").getPublicUrl(filePath);
       const posterUrl = urlData.publicUrl;
 
       const { data: event, error: insertError } = await supabase
         .from("events")
         .insert({
-          owner_id: ownerId,
+          owner_id: user!.id,
           status: "draft",
           title: "Untitled Event",
           start_at: new Date().toISOString(),
@@ -59,20 +51,11 @@ export default function UploadPage() {
         })
         .select()
         .single();
-
       if (insertError) throw insertError;
 
-      const { error: extractError } = await supabase.functions.invoke("extract", {
+      await supabase.functions.invoke("extract", {
         body: { eventId: event.id, imageUrl: posterUrl },
       });
-
-      if (extractError) {
-        console.error("Extraction error:", extractError);
-        toast({
-          title: "Extraction started",
-          description: "AI extraction may take a moment. You can edit the draft now.",
-        });
-      }
 
       navigate(`/drafts/${event.id}`);
     } catch (error) {
@@ -83,74 +66,140 @@ export default function UploadPage() {
         variant: "destructive",
       });
       setIsLoading(false);
+      setUploadStep("idle");
     }
   };
 
-  const handleUrlSubmit = async (imageUrl: string) => {
-    if (!ownerId) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to upload events",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  // Anonymous flow via submit-poster edge function
+  const handleAnonymousUpload = async (file: File) => {
     setIsLoading(true);
+    setRejectionMessage(null);
+    setUploadStep("screening");
 
     try {
-      const { data: event, error: insertError } = await supabase
-        .from("events")
-        .insert({
-          owner_id: ownerId,
-          status: "draft",
-          title: "Untitled Event",
-          start_at: new Date().toISOString(),
-          city: "",
-          poster_public_url: imageUrl,
-        })
-        .select()
-        .single();
+      // Convert file to base64
+      const base64 = await fileToBase64(file);
 
-      if (insertError) throw insertError;
-
-      const { error: extractError } = await supabase.functions.invoke("extract", {
-        body: { eventId: event.id, imageUrl },
+      const { data, error } = await supabase.functions.invoke("submit-poster", {
+        body: { imageBase64: base64 },
       });
 
-      if (extractError) {
-        console.error("Extraction error:", extractError);
+      if (error) throw error;
+
+      if (data.status === "rejected") {
+        setRejectionMessage(data.reason);
+        setIsLoading(false);
+        setUploadStep("idle");
+        return;
       }
 
-      navigate(`/drafts/${event.id}`);
+      setUploadStep("done");
+      navigate(`/drafts/${data.eventId}?token=${data.editToken}`);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Upload error:", error);
       toast({
-        title: "Failed to process",
+        title: "Upload failed",
         description: error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       });
       setIsLoading(false);
+      setUploadStep("idle");
+    }
+  };
+
+  const handleFileSelect = async (file: File) => {
+    if (user) {
+      handleAuthenticatedUpload(file);
+    } else {
+      handleAnonymousUpload(file);
+    }
+  };
+
+  // URL-based uploads
+  const handleUrlSubmit = async (imageUrl: string) => {
+    if (user) {
+      // Authenticated URL flow
+      setIsLoading(true);
+      setUploadStep("extracting");
+      try {
+        const { data: event, error: insertError } = await supabase
+          .from("events")
+          .insert({
+            owner_id: user.id,
+            status: "draft",
+            title: "Untitled Event",
+            start_at: new Date().toISOString(),
+            city: "",
+            poster_public_url: imageUrl,
+          })
+          .select()
+          .single();
+        if (insertError) throw insertError;
+
+        await supabase.functions.invoke("extract", {
+          body: { eventId: event.id, imageUrl },
+        });
+        navigate(`/drafts/${event.id}`);
+      } catch (error) {
+        console.error("Error:", error);
+        toast({
+          title: "Failed to process",
+          description: error instanceof Error ? error.message : "Something went wrong",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        setUploadStep("idle");
+      }
+    } else {
+      // Anonymous URL flow
+      setIsLoading(true);
+      setRejectionMessage(null);
+      setUploadStep("screening");
+      try {
+        const { data, error } = await supabase.functions.invoke("submit-poster", {
+          body: { imageUrl },
+        });
+        if (error) throw error;
+
+        if (data.status === "rejected") {
+          setRejectionMessage(data.reason);
+          setIsLoading(false);
+          setUploadStep("idle");
+          return;
+        }
+
+        setUploadStep("done");
+        navigate(`/drafts/${data.eventId}?token=${data.editToken}`);
+      } catch (error) {
+        console.error("Error:", error);
+        toast({
+          title: "Failed to process",
+          description: error instanceof Error ? error.message : "Something went wrong",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        setUploadStep("idle");
+      }
     }
   };
 
   const handleEventUrlSubmit = async (sourceUrl: string) => {
-    if (!ownerId) {
+    if (!user) {
       toast({
-        title: "Authentication required",
-        description: "Please sign in to upload events",
+        title: "Sign in required",
+        description: "Event URL extraction requires an account. Please sign in first.",
         variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
-
+    setUploadStep("extracting");
     try {
       const { data: event, error: insertError } = await supabase
         .from("events")
         .insert({
-          owner_id: ownerId,
+          owner_id: user.id,
           status: "draft",
           title: "Untitled Event",
           start_at: new Date().toISOString(),
@@ -159,17 +208,11 @@ export default function UploadPage() {
         })
         .select()
         .single();
-
       if (insertError) throw insertError;
 
-      const { error: extractError } = await supabase.functions.invoke("extract", {
+      await supabase.functions.invoke("extract", {
         body: { eventId: event.id, sourceUrl },
       });
-
-      if (extractError) {
-        console.error("Extraction error:", extractError);
-      }
-
       navigate(`/drafts/${event.id}`);
     } catch (error) {
       console.error("Error:", error);
@@ -179,49 +222,9 @@ export default function UploadPage() {
         variant: "destructive",
       });
       setIsLoading(false);
+      setUploadStep("idle");
     }
   };
-
-  // Show loading while checking auth
-  if (authLoading) {
-    return (
-      <Layout>
-        <section className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[calc(100vh-200px)]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </section>
-      </Layout>
-    );
-  }
-
-  // Show sign-in prompt if not authenticated
-  if (!user) {
-    return (
-      <Layout>
-        <section className="container mx-auto px-4 py-16 min-h-[calc(100vh-200px)]">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-auto max-w-md text-center"
-          >
-            <div className="rounded-xl border border-border bg-card p-8">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <LogIn className="h-8 w-8 text-primary" />
-              </div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">Sign in to upload</h1>
-              <p className="text-muted-foreground mb-6">
-                Create an account to start uploading and managing your events
-              </p>
-              <Link to="/signin">
-                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                  Sign In
-                </Button>
-              </Link>
-            </div>
-          </motion.div>
-        </section>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
@@ -239,7 +242,28 @@ export default function UploadPage() {
             <p className="text-sm sm:text-base text-muted-foreground">
               Snap a photo and we'll extract the details
             </p>
+            {!user && (
+              <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                No account needed — AI screens all uploads
+              </p>
+            )}
           </div>
+
+          {/* Rejection message */}
+          {rejectionMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 flex items-start gap-3 rounded-xl border border-destructive/50 bg-destructive/10 p-4"
+            >
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+              <div>
+                <p className="font-medium text-foreground">Upload not accepted</p>
+                <p className="text-sm text-muted-foreground mt-1">{rejectionMessage}</p>
+              </div>
+            </motion.div>
+          )}
 
           {isLoading ? (
             <motion.div
@@ -257,13 +281,18 @@ export default function UploadPage() {
                   transition={{ duration: 2, repeat: Infinity }}
                 />
               </div>
-              <div className="text-center px-4">
+              <div className="text-center px-4 w-full max-w-xs">
                 <p className="text-lg font-medium text-foreground">
-                  Extracting event details...
+                  {uploadStep === "screening" && "Screening your image..."}
+                  {uploadStep === "extracting" && "Extracting event details..."}
+                  {uploadStep === "done" && "All done!"}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Our AI is reading your poster
+                  {uploadStep === "screening" && "Checking content safety"}
+                  {uploadStep === "extracting" && "Our AI is reading your poster"}
+                  {uploadStep === "done" && "Redirecting to your draft..."}
                 </p>
+                <Progress value={progressValue} className="mt-4 h-2" />
               </div>
             </motion.div>
           ) : (
@@ -275,7 +304,6 @@ export default function UploadPage() {
                 isLoading={isLoading}
               />
               
-              {/* Helper text */}
               <motion.p 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -290,4 +318,18 @@ export default function UploadPage() {
       </section>
     </Layout>
   );
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Strip data URL prefix
+      const base64 = result.split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }

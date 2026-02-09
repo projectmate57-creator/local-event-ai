@@ -53,7 +53,7 @@ export type EventExtraction = z.infer<typeof eventExtractionSchema>;
 // Database event type (full, for owners only)
 export interface Event {
   id: string;
-  owner_id: string;
+  owner_id: string | null;
   status: "draft" | "published";
   slug: string | null;
   title: string;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, Save, Send, RefreshCw, AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -23,6 +23,8 @@ type EventFormData = Omit<Event, "id" | "owner_id" | "created_at" | "updated_at"
 
 export default function DraftPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const editToken = searchParams.get("token");
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -39,9 +41,30 @@ export default function DraftPage() {
   const [endDate, setEndDate] = useState("");
   const [endTime, setEndTime] = useState("");
 
+  // Build custom headers for token-based access
+  const tokenHeaders = editToken ? { "x-edit-token": editToken } : {};
+
   const { data: event, isLoading } = useQuery({
-    queryKey: ["draft", id],
+    queryKey: ["draft", id, editToken],
     queryFn: async () => {
+      // If we have an edit token, pass it via custom header
+      if (editToken) {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/events?id=eq.${id}&select=*`,
+          {
+            headers: {
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              "x-edit-token": editToken,
+            },
+          }
+        );
+        if (!response.ok) throw new Error("Event not found");
+        const data = await response.json();
+        if (!data.length) throw new Error("Event not found");
+        return data[0] as Event;
+      }
+
       const { data, error } = await supabase
         .from("events")
         .select("*")
@@ -90,6 +113,26 @@ export default function DraftPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: Partial<EventFormData>) => {
+      if (editToken) {
+        // Token-based save for anonymous users
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/events?id=eq.${id}`,
+          {
+            method: "PATCH",
+            headers: {
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              "Content-Type": "application/json",
+              Prefer: "return=minimal",
+              "x-edit-token": editToken,
+            },
+            body: JSON.stringify(data),
+          }
+        );
+        if (!response.ok) throw new Error("Failed to save");
+        return;
+      }
+
       const { error } = await supabase
         .from("events")
         .update(data)
@@ -113,14 +156,30 @@ export default function DraftPage() {
   const publishMutation = useMutation({
     mutationFn: async () => {
       const slug = formData.slug || generateSlug(formData.title || "event");
+      const updateData = { ...formData, slug, status: "published" };
       
+      if (editToken) {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/events?id=eq.${id}`,
+          {
+            method: "PATCH",
+            headers: {
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              "Content-Type": "application/json",
+              Prefer: "return=minimal",
+              "x-edit-token": editToken,
+            },
+            body: JSON.stringify(updateData),
+          }
+        );
+        if (!response.ok) throw new Error("Failed to publish");
+        return slug;
+      }
+
       const { error } = await supabase
         .from("events")
-        .update({
-          ...formData,
-          slug,
-          status: "published",
-        })
+        .update(updateData)
         .eq("id", id);
 
       if (error) throw error;

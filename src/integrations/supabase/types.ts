@@ -60,12 +60,13 @@ export type Database = {
           content_flags: string[] | null
           created_at: string
           description: string | null
+          edit_token: string | null
           end_at: string | null
           evidence_json: Json | null
           id: string
           moderation_notes: string | null
           moderation_status: string
-          owner_id: string
+          owner_id: string | null
           poster_path: string | null
           poster_public_url: string | null
           slug: string | null
@@ -88,12 +89,13 @@ export type Database = {
           content_flags?: string[] | null
           created_at?: string
           description?: string | null
+          edit_token?: string | null
           end_at?: string | null
           evidence_json?: Json | null
           id?: string
           moderation_notes?: string | null
           moderation_status?: string
-          owner_id: string
+          owner_id?: string | null
           poster_path?: string | null
           poster_public_url?: string | null
           slug?: string | null
@@ -116,12 +118,13 @@ export type Database = {
           content_flags?: string[] | null
           created_at?: string
           description?: string | null
+          edit_token?: string | null
           end_at?: string | null
           evidence_json?: Json | null
           id?: string
           moderation_notes?: string | null
           moderation_status?: string
-          owner_id?: string
+          owner_id?: string | null
           poster_path?: string | null
           poster_public_url?: string | null
           slug?: string | null

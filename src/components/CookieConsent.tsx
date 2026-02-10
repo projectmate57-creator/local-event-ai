@@ -20,7 +20,12 @@ export function CookieConsent() {
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem(STORAGE_KEY, "true");
+    localStorage.setItem(STORAGE_KEY, "accepted");
+    setShowBanner(false);
+  };
+
+  const handleReject = () => {
+    localStorage.setItem(STORAGE_KEY, "rejected");
     setShowBanner(false);
   };
 
@@ -47,9 +52,14 @@ export function CookieConsent() {
                   </Link>
                 </p>
               </div>
-              <Button onClick={handleAccept} size="sm" className="shrink-0">
-                Accept
-              </Button>
+              <div className="flex gap-2 shrink-0">
+                <Button onClick={handleReject} variant="ghost" size="sm">
+                  Reject
+                </Button>
+                <Button onClick={handleAccept} size="sm">
+                  Accept
+                </Button>
+              </div>
             </div>
           </div>
         </motion.div>

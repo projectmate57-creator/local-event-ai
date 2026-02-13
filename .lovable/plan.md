@@ -1,37 +1,44 @@
 
 
-# Fix 5 Security Scan Errors
+# Cookie Reject Enforcement + Admin Moderation Queue
 
-## Findings Analysis
+## Feature 1: Cookie Reject Actually Blocks Analytics
 
-| # | Finding | Root Cause | Action |
-|---|---------|-----------|--------|
-| 1 | Security Definer View | Our `events_public` view is intentionally SECURITY DEFINER to bypass RLS and serve public data safely | **Ignore** -- this is by design |
-| 2 | User Roles Exposed to Public | The `Users can view their own roles` policy targets `public` role (includes anonymous). While `auth.uid()` is NULL for anon so no data leaks, it's better practice to restrict to `authenticated` only | **Fix** |
-| 3 | Edit Tokens Could Be Stolen | The token-holder SELECT policy targets `public` role. This is by design for anonymous uploads, but the scan flags it as risky | **Ignore** -- by design, requires valid UUID token |
-| 4 | Event Ownership Data Exposed | Same as #3 -- the token-holder policy. Owner data is only visible to authenticated owners via separate policy | **Ignore** -- same reason as #3 |
-| 5 | Business Analytics Data Leaked | The `Block direct analytics inserts` policy targets `{anon,authenticated}`. While no anon SELECT policy exists (so anon can't read), tightening is good practice | **Fix** -- restrict INSERT block to authenticated only and add explicit anon denial |
+Currently the "Reject" button stores `"rejected"` in localStorage but analytics tracking still fires. We'll fix this.
 
-## Changes
+### Changes
 
-### Database Migration
+1. **New utility file `src/lib/consent.ts`** -- A helper `hasAnalyticsConsent()` that returns `true` only if the cookie consent value is `"accepted"`.
 
-1. **Drop and recreate `user_roles` SELECT policy** restricted to `authenticated` role only (currently `public`):
-   - Drop `Users can view their own roles`
-   - Recreate with same logic but targeting `authenticated` role
+2. **Gate analytics in `EventDetailPage.tsx`** -- Wrap both `track-analytics` calls (page view + ticket click) with the consent check so they only fire when the user has accepted cookies.
 
-2. **Tighten `event_analytics` policies**:
-   - Drop the INSERT block that targets `{anon,authenticated}` 
-   - Recreate targeting only `authenticated`
-   - Add an explicit policy denying anonymous SELECT
+---
 
-3. **Mark scan findings as resolved/ignored**:
-   - Delete finding #2 (user_roles -- fixed)
-   - Delete finding #5 (analytics -- fixed)  
-   - Ignore finding #1 (security definer view -- by design)
-   - Ignore findings #3 and #4 (token-holder access -- by design for anonymous uploads)
+## Feature 2: Admin Moderation Queue
 
-### No Frontend Changes Required
+When the AI is unsure about content (flags it as `"pending"`), an admin must approve the event before it can be published. The database already has `moderation_status` and `moderation_notes` columns, and the `submit-poster` edge function already sets `moderation_status = "pending"` for borderline content. What's missing is the admin UI to review and approve/reject these events.
 
-These are all database-level security hardening changes with no impact on the UI.
+### Changes
+
+### Admin Dashboard Enhancements (`AdminPage.tsx`)
+
+1. **Add a "Moderation" filter tab** -- alongside the existing "All / Published / Draft" status filter, add a new filter option for `moderation_status = "pending"` so admins can quickly see the queue.
+
+2. **Show moderation status badge** in the events table -- display a colored badge (yellow for pending, green for approved, red for rejected) next to each event's status.
+
+3. **Add Approve/Reject actions** -- for events with `moderation_status = "pending"`, show "Approve" and "Reject" buttons in the actions column. These will update the `moderation_status` field (and optionally `moderation_notes` for rejection reasons).
+
+4. **Add a stats card** for "Pending Review" count at the top of the dashboard.
+
+5. **Show moderation notes** -- display the AI's screening reason so admins understand why the event was flagged.
+
+### Draft Page Update (`DraftPage.tsx`)
+
+The draft page already blocks publishing when `moderation_status === "pending"`. We'll add a clear info banner explaining to the user that their event is under review and will be available once approved.
+
+### Technical Details
+
+- No database changes needed -- `moderation_status` and `moderation_notes` columns already exist
+- No new edge functions needed -- admins update via the existing Supabase client with their admin RLS policies
+- The `events_public` view already filters to `moderation_status = 'approved'`, so rejected/pending events won't appear publicly
 

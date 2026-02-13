@@ -141,6 +141,7 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [moderationFilter, setModerationFilter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [formData, setFormData] = useState<EventFormData>(initialFormData);
@@ -326,7 +327,9 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
       event.city.toLowerCase().includes(search.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || event.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesModeration =
+      moderationFilter === "all" || event.moderation_status === moderationFilter;
+    return matchesSearch && matchesStatus && matchesModeration;
   });
 
   // Stats
@@ -334,8 +337,28 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
     total: events.length,
     published: events.filter((e) => e.status === "published").length,
     drafts: events.filter((e) => e.status === "draft").length,
-    past: events.filter((e) => new Date(e.start_at) < new Date()).length,
+    pendingReview: events.filter((e) => e.moderation_status === "pending").length,
   };
+
+  // Moderation mutation
+  const moderationMutation = useMutation({
+    mutationFn: async ({ eventId, status, notes }: { eventId: string; status: string; notes?: string }) => {
+      const updateData: Record<string, string> = { moderation_status: status };
+      if (notes !== undefined) updateData.moderation_notes = notes;
+      const { error } = await supabase
+        .from("events")
+        .update(updateData)
+        .eq("id", eventId);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      toast({ title: `Event ${variables.status === "approved" ? "approved" : "rejected"}` });
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    },
+    onError: (error) => {
+      toast({ title: "Failed to update moderation status", description: error.message, variant: "destructive" });
+    },
+  });
 
   const openEditDialog = (event: Event) => {
     setEditingEvent(event);
@@ -713,7 +736,7 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
             { label: "Total Events", value: stats.total, icon: Calendar },
             { label: "Published", value: stats.published, icon: CheckCircle },
             { label: "Drafts", value: stats.drafts, icon: Clock },
-            { label: "Past Events", value: stats.past, icon: AlertTriangle },
+            { label: "Pending Review", value: stats.pendingReview, icon: ShieldCheck, highlight: stats.pendingReview > 0 },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -721,12 +744,12 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
             >
-              <Card>
+              <Card className={cn("highlight" in stat && stat.highlight && "border-amber-500/50 bg-amber-500/5")}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     {stat.label}
                   </CardTitle>
-                  <stat.icon className="h-4 w-4 text-muted-foreground" />
+                  <stat.icon className={cn("h-4 w-4", "highlight" in stat && stat.highlight ? "text-amber-500" : "text-muted-foreground")} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stat.value}</div>
@@ -758,6 +781,20 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
               <SelectItem value="draft">Draft</SelectItem>
             </SelectContent>
           </Select>
+          {isAdmin && (
+            <Select value={moderationFilter} onValueChange={setModerationFilter}>
+              <SelectTrigger className="w-[170px]">
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Moderation" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Moderation</SelectItem>
+                <SelectItem value="pending">Pending Review</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Events Table */}
@@ -849,18 +886,61 @@ function AdminDashboard({ user, onLogout }: { user: User; onLogout: () => void }
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              event.status === "published"
-                                ? "default"
-                                : "secondary"
-                            }
-                          >
-                            {event.status}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={
+                                event.status === "published"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
+                              {event.status}
+                            </Badge>
+                            {isAdmin && (
+                              <Badge
+                                className={cn(
+                                  event.moderation_status === "pending" && "bg-amber-500 text-white hover:bg-amber-500/80",
+                                  event.moderation_status === "approved" && "bg-emerald-600 text-white hover:bg-emerald-600/80",
+                                  event.moderation_status === "rejected" && "bg-destructive text-destructive-foreground hover:bg-destructive/80",
+                                )}
+                              >
+                                {event.moderation_status}
+                              </Badge>
+                            )}
+                          </div>
+                          {isAdmin && event.moderation_notes && event.moderation_status === "pending" && (
+                            <p className="mt-1 text-xs text-muted-foreground max-w-[200px] truncate" title={event.moderation_notes}>
+                              {event.moderation_notes}
+                            </p>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            {/* Moderation actions for admins */}
+                            {isAdmin && event.moderation_status === "pending" && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-emerald-600 border-emerald-600/30 hover:bg-emerald-600/10"
+                                  onClick={() => moderationMutation.mutate({ eventId: event.id, status: "approved" })}
+                                  disabled={moderationMutation.isPending}
+                                >
+                                  <CheckCircle className="mr-1 h-3 w-3" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                                  onClick={() => moderationMutation.mutate({ eventId: event.id, status: "rejected", notes: "Rejected by admin" })}
+                                  disabled={moderationMutation.isPending}
+                                >
+                                  <AlertTriangle className="mr-1 h-3 w-3" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
                             {event.status === "published" && event.slug && (
                               <Button variant="ghost" size="icon" asChild>
                                 <Link to={`/events/${event.slug}`}>

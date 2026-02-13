@@ -22,6 +22,7 @@ import { ShareButtons } from "@/components/ShareButtons";
 import { FloatingEventDate } from "@/components/FloatingEventDate";
 import { AgeGateModal, useAgeVerification } from "@/components/AgeGateModal";
 import { AgeRestrictionBadge } from "@/components/AgeRestrictionBadge";
+import { hasAnalyticsConsent } from "@/lib/consent";
 
 export default function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -63,9 +64,9 @@ export default function EventDetailPage() {
     }
   }, [event, isVerified]);
 
-  // Track page view via rate-limited edge function
+  // Track page view via rate-limited edge function (only if cookies accepted)
   useEffect(() => {
-    if (event?.id) {
+    if (event?.id && hasAnalyticsConsent()) {
       supabase.functions
         .invoke("track-analytics", {
           body: { event_id: event.id, type: "view" },
@@ -78,14 +79,18 @@ export default function EventDetailPage() {
 
   const handleTicketClick = () => {
     if (event?.ticket_url) {
-      // Track click via rate-limited edge function
-      supabase.functions
-        .invoke("track-analytics", {
-          body: { event_id: event.id, type: "ticket_click" },
-        })
-        .then(() => {
-          window.open(event.ticket_url!, "_blank");
-        });
+      if (hasAnalyticsConsent()) {
+        // Track click via rate-limited edge function
+        supabase.functions
+          .invoke("track-analytics", {
+            body: { event_id: event.id, type: "ticket_click" },
+          })
+          .then(() => {
+            window.open(event.ticket_url!, "_blank");
+          });
+      } else {
+        window.open(event.ticket_url!, "_blank");
+      }
     }
   };
 

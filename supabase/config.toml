@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.submit-poster]
 verify_jwt = false
+
+[functions.notify-admin-moderation]
+verify_jwt = false

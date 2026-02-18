@@ -195,6 +195,27 @@ RULES:
 
     console.log(`Created anonymous event ${event.id} with moderation_status=${moderationStatus}`);
 
+    // Notify admins if event is pending moderation (fire and forget)
+    if (moderationStatus === "pending") {
+      try {
+        const notifyUrl = `${SUPABASE_URL}/functions/v1/notify-admin-moderation`;
+        fetch(notifyUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            eventId: event.id,
+            eventTitle: "Untitled Event",
+            moderationReason: screening.reason,
+          }),
+        }).catch(err => console.error("Admin notification failed (non-fatal):", err));
+      } catch (e) {
+        console.error("Admin notification error (non-fatal):", e);
+      }
+    }
+
     // Step 4: Trigger AI extraction (fire and forget)
     try {
       const currentYear = new Date().getFullYear();

@@ -17,19 +17,22 @@ export default function EventsPage() {
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<EventFilters>({
     dateRange: "all",
     sortBy: "soonest",
   });
+  const [page, setPage] = useState(0);
 
-  const fetchEvents = async (isNewFilter = false) => {
+  const fetchEvents = async (pageOffset: number, replace: boolean) => {
     setLoading(true);
 
     try {
       let query = supabase
         .from("events_public")
         .select("*");
+
+      // Always hide past events
+      query = query.gte("start_at", new Date().toISOString());
 
       // Search filter
       if (filters.search) {
@@ -50,7 +53,6 @@ export default function EventsPage() {
           query = query.gte("start_at", range.start).lt("start_at", range.end);
         }
       }
-      // Note: We show all events regardless of date to include recently published ones
 
       // Sorting
       if (filters.sortBy === "newest") {
@@ -60,16 +62,15 @@ export default function EventsPage() {
       }
 
       // Pagination
-      const offset = isNewFilter ? 0 : page * EVENTS_PER_PAGE;
+      const offset = pageOffset * EVENTS_PER_PAGE;
       query = query.range(offset, offset + EVENTS_PER_PAGE - 1);
 
       const { data, error } = await query;
 
       if (error) throw error;
 
-      if (isNewFilter) {
+      if (replace) {
         setEvents(data as PublicEvent[]);
-        setPage(1);
       } else {
         setEvents((prev) => [...prev, ...(data as PublicEvent[])]);
       }
@@ -82,13 +83,16 @@ export default function EventsPage() {
     }
   };
 
+  // Fetch when filters change — reset to page 0
   useEffect(() => {
-    fetchEvents(true);
+    setPage(0);
+    fetchEvents(0, true);
   }, [filters]);
 
   const handleLoadMore = () => {
-    setPage((prev) => prev + 1);
-    fetchEvents(false);
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchEvents(nextPage, false);
   };
 
   return (

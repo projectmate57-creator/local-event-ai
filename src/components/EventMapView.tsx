@@ -105,7 +105,7 @@ export function EventMapView({ events }: EventMapViewProps) {
                   {event.start_at ? format(new Date(event.start_at), "MMM d, yyyy · h:mm a") : "TBD"}
                 </div>
                 {event.venue && (
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <MapPin className="h-3 w-3" />
                     {event.venue}
                   </div>

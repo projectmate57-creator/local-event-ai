@@ -22,6 +22,7 @@ import { ShareButtons } from "@/components/ShareButtons";
 import { FloatingEventDate } from "@/components/FloatingEventDate";
 import { AgeGateModal, useAgeVerification } from "@/components/AgeGateModal";
 import { AgeRestrictionBadge } from "@/components/AgeRestrictionBadge";
+import { SEOHead } from "@/components/SEOHead";
 import { hasAnalyticsConsent } from "@/lib/consent";
 
 export default function EventDetailPage() {
@@ -145,6 +146,11 @@ export default function EventDetailPage() {
           }}
         />
       )}
+      <SEOHead
+        title={event.title || "Event"}
+        description={event.description || `${event.title} at ${event.venue || event.city}`}
+        path={`/events/${event.slug || event.id}`}
+      />
       <FloatingEventDate event={event} triggerRef={dateInfoRef} />
       <article className="container mx-auto px-4 py-12">
         {/* Back button */}
@@ -170,7 +176,8 @@ export default function EventDetailPage() {
           >
             <img
               src={posterUrl}
-              alt={event.title}
+              alt={`Poster for ${event.title}`}
+              loading="lazy"
               className="h-full w-full object-cover"
               style={{ maxHeight: "600px" }}
             />

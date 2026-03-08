@@ -8,6 +8,7 @@ import { EventCardSkeleton } from "@/components/EventCardSkeleton";
 import { ChatWidget } from "@/components/ChatWidget";
 import { Footer } from "@/components/Footer";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
+import { SEOHead } from "@/components/SEOHead";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { PublicEvent } from "@/lib/types";
@@ -56,6 +57,11 @@ export default function Index() {
 
   return (
     <Layout>
+      <SEOHead
+        title="AI-Powered Local Event Discovery"
+        description="Upload your event poster and let AI extract the details. Create beautiful, shareable event pages in seconds. Perfect for local meetups, workshops, and community events."
+        path="/"
+      />
       {/* Hero Section */}
       <section className="relative min-h-[90vh] overflow-hidden">
         <AnimatedBackground />

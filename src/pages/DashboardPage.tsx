@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -35,7 +35,6 @@ import { Event } from "@/lib/types";
 import { formatRelativeTime } from "@/lib/date";
 
 export default function DashboardPage() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -132,8 +131,7 @@ export default function DashboardPage() {
 
   // Redirect if not logged in - after all hooks
   if (!user) {
-    navigate("/signin");
-    return null;
+    return <Navigate to="/signin" replace />;
   }
 
   const drafts = events?.filter((e) => e.status === "draft") || [];

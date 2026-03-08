@@ -252,6 +252,7 @@ export type Database = {
           venue: string
         }[]
       }
+      escape_ilike: { Args: { input: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

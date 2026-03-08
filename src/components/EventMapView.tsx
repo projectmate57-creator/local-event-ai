@@ -100,9 +100,9 @@ export function EventMapView({ events }: EventMapViewProps) {
             <Popup>
               <div className="min-w-[200px] space-y-2 p-1">
                 <h3 className="text-sm font-bold leading-tight">{event.title}</h3>
-                <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Calendar className="h-3 w-3" />
-                  {format(new Date(event.start_at), "MMM d, yyyy · h:mm a")}
+                  {event.start_at ? format(new Date(event.start_at), "MMM d, yyyy · h:mm a") : "TBD"}
                 </div>
                 {event.venue && (
                   <div className="flex items-center gap-1.5 text-xs text-gray-600">

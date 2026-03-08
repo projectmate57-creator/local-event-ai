@@ -112,7 +112,7 @@ export function EventMapView({ events }: EventMapViewProps) {
                 )}
                 <Link
                   to={`/events/${event.slug || event.id}`}
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline"
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                 >
                   View Details <ExternalLink className="h-3 w-3" />
                 </Link>

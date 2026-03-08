@@ -1,0 +1,2 @@
+UPDATE events SET latitude = 52.4934, longitude = 13.4234 WHERE id = '021a2f73-d17d-467f-91eb-2d4d7d3ff380';
+UPDATE events SET latitude = 52.4820, longitude = 13.4350 WHERE id = 'da885acd-2466-43c2-b929-5880eb4c8219';

@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MapPin } from "lucide-react";
+import { MapPin, LayoutGrid, Map } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { EventCard } from "@/components/EventCard";
 import { EventCardSkeleton } from "@/components/EventCardSkeleton";
 import { FiltersBar } from "@/components/FiltersBar";
+import { EventMapView } from "@/components/EventMapView";
 import { ChatWidget } from "@/components/ChatWidget";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { PublicEvent, EventFilters } from "@/lib/types";
 import { getDateRangeFilter } from "@/lib/date";
+import { cn } from "@/lib/utils";
 
 const EVENTS_PER_PAGE = 12;
 
@@ -17,6 +19,7 @@ export default function EventsPage() {
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
+  const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
   const [filters, setFilters] = useState<EventFilters>({
     dateRange: "all",
     sortBy: "soonest",
@@ -109,9 +112,39 @@ export default function EventsPage() {
           </p>
         </motion.div>
 
-        <FiltersBar filters={filters} onFiltersChange={setFilters} />
+        <div className="mb-6 flex items-center justify-between">
+          <FiltersBar filters={filters} onFiltersChange={setFilters} />
+          <div className="flex gap-1 rounded-lg border border-border p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className={cn(
+                "h-8 w-8 p-0",
+                viewMode === "grid" && "bg-primary/10 text-primary"
+              )}
+              aria-label="Grid view"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("map")}
+              className={cn(
+                "h-8 w-8 p-0",
+                viewMode === "map" && "bg-primary/10 text-primary"
+              )}
+              aria-label="Map view"
+            >
+              <Map className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
-        {loading && events.length === 0 ? (
+        {viewMode === "map" ? (
+          <EventMapView events={events} />
+        ) : loading && events.length === 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <EventCardSkeleton key={i} index={i} />

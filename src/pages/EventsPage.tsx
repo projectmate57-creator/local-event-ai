@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { MapPin, LayoutGrid, Map } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { SEOHead } from "@/components/SEOHead";
+import { EventListJsonLd } from "@/components/EventJsonLd";
 import { EventCard } from "@/components/EventCard";
 import { EventCardSkeleton } from "@/components/EventCardSkeleton";
 import { FiltersBar } from "@/components/FiltersBar";
@@ -102,6 +103,7 @@ export default function EventsPage() {
   return (
     <Layout>
       <SEOHead title="Browse Events" description="Discover upcoming local events in your community. Find meetups, workshops, concerts and more." path="/events" />
+      <EventListJsonLd events={events} />
       <section className="container mx-auto px-4 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -64,6 +64,8 @@ export type Database = {
           end_at: string | null
           evidence_json: Json | null
           id: string
+          latitude: number | null
+          longitude: number | null
           moderation_notes: string | null
           moderation_status: string
           owner_id: string | null
@@ -93,6 +95,8 @@ export type Database = {
           end_at?: string | null
           evidence_json?: Json | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           moderation_notes?: string | null
           moderation_status?: string
           owner_id?: string | null
@@ -122,6 +126,8 @@ export type Database = {
           end_at?: string | null
           evidence_json?: Json | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           moderation_notes?: string | null
           moderation_status?: string
           owner_id?: string | null
@@ -172,6 +178,8 @@ export type Database = {
           description: string | null
           end_at: string | null
           id: string | null
+          latitude: number | null
+          longitude: number | null
           poster_public_url: string | null
           slug: string | null
           start_at: string | null
@@ -191,6 +199,8 @@ export type Database = {
           description?: string | null
           end_at?: string | null
           id?: string | null
+          latitude?: number | null
+          longitude?: number | null
           poster_public_url?: string | null
           slug?: string | null
           start_at?: string | null
@@ -210,6 +220,8 @@ export type Database = {
           description?: string | null
           end_at?: string | null
           id?: string | null
+          latitude?: number | null
+          longitude?: number | null
           poster_public_url?: string | null
           slug?: string | null
           start_at?: string | null

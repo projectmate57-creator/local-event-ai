@@ -23,6 +23,7 @@ import { FloatingEventDate } from "@/components/FloatingEventDate";
 import { AgeGateModal, useAgeVerification } from "@/components/AgeGateModal";
 import { AgeRestrictionBadge } from "@/components/AgeRestrictionBadge";
 import { SEOHead } from "@/components/SEOHead";
+import { EventJsonLd } from "@/components/EventJsonLd";
 import { hasAnalyticsConsent } from "@/lib/consent";
 
 export default function EventDetailPage() {
@@ -151,6 +152,7 @@ export default function EventDetailPage() {
         description={event.description || `${event.title} at ${event.venue || event.city}`}
         path={`/events/${event.slug || event.id}`}
       />
+      <EventJsonLd event={event} />
       <FloatingEventDate event={event} triggerRef={dateInfoRef} />
       <article className="container mx-auto px-4 py-12">
         {/* Back button */}

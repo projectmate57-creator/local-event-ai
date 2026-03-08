@@ -98,6 +98,8 @@ export interface PublicEvent {
   tags: string[] | null;
   poster_public_url: string | null;
   age_restriction: AgeRestriction;
+  latitude: number | null;
+  longitude: number | null;
   created_at: string;
   updated_at: string;
 }

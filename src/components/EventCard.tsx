@@ -30,6 +30,7 @@ export function EventCard({ event, index = 0 }: EventCardProps) {
             <img
               src={posterUrl}
               alt={event.title}
+              loading="lazy"
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

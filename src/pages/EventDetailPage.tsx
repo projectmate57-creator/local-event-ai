@@ -176,7 +176,8 @@ export default function EventDetailPage() {
           >
             <img
               src={posterUrl}
-              alt={event.title}
+              alt={`Poster for ${event.title}`}
+              loading="lazy"
               className="h-full w-full object-cover"
               style={{ maxHeight: "600px" }}
             />

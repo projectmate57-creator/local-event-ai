@@ -1,43 +1,53 @@
 
 
-# Fix Events Page Bugs
+# Add Interactive Map View to Events Page
 
-## Issues Found
+## Overview
 
-1. **Past events still visible**: When the "All" date filter is selected (the default), the query fetches ALL events including past ones. Events whose date has passed should be hidden by default -- "All" should mean "all upcoming", not "all time."
+Add a toggle on the Events page to switch between the current grid/list view and an interactive map view showing event locations as clickable pins. Uses **Leaflet** (free, no API key needed).
 
-2. **Pagination race condition**: `handleLoadMore` calls `setPage(prev => prev + 1)` then immediately calls `fetchEvents(false)`. Because React state updates are asynchronous, `fetchEvents` reads the OLD `page` value, causing duplicate or missing results.
+## Approach
 
-3. **Filter changes don't properly reset state**: When filters change, `fetchEvents(true)` is called and sets `page` to 1 inside, but the offset calculation uses the stale `page` state value during that same render cycle.
+### Database Change
 
----
+Add `latitude` and `longitude` columns to the `events` table so we can plot events on a map. Also add them to the `events_public` view.
 
-## Fixes
+```sql
+ALTER TABLE public.events ADD COLUMN latitude double precision;
+ALTER TABLE public.events ADD COLUMN longitude double precision;
+```
 
-### 1. Hide past events by default (EventsPage.tsx)
+Update the `events_public` view to include `latitude` and `longitude`.
 
-Add a baseline filter `start_at >= now()` to the query when `dateRange` is `"all"`. This ensures only future (or ongoing) events are shown. The specific date range filters (Today, This Week, This Month) already handle their own bounds, so this only applies to the "All" case.
+### Dependencies
 
-### 2. Fix pagination race condition (EventsPage.tsx)
+- `leaflet` + `react-leaflet` + `@types/leaflet` for the map component
 
-Refactor to use `useEffect` for both filter changes AND page changes:
-- Split `fetchEvents` so `page` is passed as a parameter rather than read from state
-- Use a separate `useEffect` watching `page` to trigger "load more" fetches
-- Or simpler: pass the correct offset directly into `handleLoadMore` by computing it before the state update
+### New Files
 
-### 3. Ensure clean filter resets (EventsPage.tsx)
+- **`src/components/EventMapView.tsx`** — Leaflet map component that renders event markers with popups containing event title, date, venue, and a "View Details" link. Default center on Europe (or auto-fit bounds to visible events).
 
-When filters change, reset `page` to 0 and replace events. The `useEffect` already calls `fetchEvents(true)`, but the offset calculation needs to consistently use 0 for new filters (which it does via the `isNewFilter` flag -- this part is correct but the page state sync needs fixing).
+### Modified Files
 
----
+- **`src/pages/EventsPage.tsx`** — Add a List/Map toggle button group above the events grid. When "Map" is selected, render `EventMapView` instead of the card grid. Pass filtered events to both views.
 
-## Technical Changes
+- **`src/lib/types.ts`** — Add `latitude` and `longitude` (both `number | null`) to `PublicEvent` interface.
 
-**File: `src/pages/EventsPage.tsx`**
+- **`src/index.css`** — Import Leaflet CSS (`leaflet/dist/leaflet.css`).
 
-- Add `gte("start_at", new Date().toISOString())` to the base query (before any date range filter) so past events are excluded
-- Refactor `fetchEvents` to accept a `pageOffset` parameter instead of reading from `page` state, eliminating the race condition
-- Update `handleLoadMore` to compute the next page value and pass it directly
-- Keep the `useEffect` on `[filters]` to reset and re-fetch on filter changes
+### Geocoding Strategy
 
-These are targeted fixes to the existing file -- no new files or dependencies needed.
+Events don't have coordinates yet. Two options:
+1. **Manual** — Admin can add lat/lng when editing events
+2. **Auto-geocode** — Use a free geocoding API (Nominatim) in the `extract` or `submit-poster` edge function to convert city+address to coordinates on event creation
+
+For now, the map will only show events that have coordinates. Events without coordinates gracefully fall back to the grid view only. We can add auto-geocoding as a follow-up.
+
+### UI Details
+
+- Toggle between grid icon and map icon, placed next to the existing sort controls in `FiltersBar`
+- Map fills the same content area as the grid
+- Markers use a custom pin colored with the app's primary color
+- Clicking a marker shows a popup with: event title, date, venue, and a link to `/events/:slug`
+- Map respects all active filters (search, city, date range)
+

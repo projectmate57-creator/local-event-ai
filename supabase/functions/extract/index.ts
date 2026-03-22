@@ -426,6 +426,24 @@ ${textContent}`;
 
     console.log(`Successfully extracted data for event ${eventId}`);
 
+    // Auto-geocode the event after extraction
+    try {
+      const geocodeRes = await fetch(`${SUPABASE_URL}/functions/v1/geocode`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({ mode: "single", eventId }),
+      });
+      if (geocodeRes.ok) {
+        const geoResult = await geocodeRes.json();
+        console.log(`Geocode result for ${eventId}:`, geoResult);
+      }
+    } catch (geoErr) {
+      console.error("Geocoding failed (non-fatal):", geoErr);
+    }
+
     return new Response(JSON.stringify({ success: true, data: extractedData }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

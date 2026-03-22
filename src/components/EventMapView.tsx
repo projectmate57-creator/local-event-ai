@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+// react-leaflet v4 for React 18 compatibility
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Link } from "react-router-dom";

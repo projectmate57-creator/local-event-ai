@@ -177,7 +177,8 @@ export default function EventDetailPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="overflow-hidden rounded-2xl border border-border bg-card"
+            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-border bg-card"
+            onClick={() => setPosterOpen(true)}
           >
             <img
               src={posterUrl}
@@ -186,7 +187,21 @@ export default function EventDetailPage() {
               className="h-full w-full object-cover"
               style={{ maxHeight: "600px" }}
             />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30">
+              <ZoomIn className="h-8 w-8 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+            </div>
           </motion.div>
+
+          {/* Poster Lightbox */}
+          <Dialog open={posterOpen} onOpenChange={setPosterOpen}>
+            <DialogContent className="max-w-[90vw] max-h-[90vh] border-none bg-transparent p-0 shadow-none overflow-hidden [&>button]:text-white [&>button]:bg-black/50 [&>button]:rounded-full [&>button]:p-1">
+              <img
+                src={posterUrl}
+                alt={`Poster for ${event.title}`}
+                className="max-h-[90vh] w-auto mx-auto object-contain rounded-lg"
+              />
+            </DialogContent>
+          </Dialog>
 
           {/* Details */}
           <motion.div

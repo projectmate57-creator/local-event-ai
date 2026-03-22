@@ -8,7 +8,9 @@ import {
   ArrowLeft,
   Download,
   Tag,
+  ZoomIn,
 } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";

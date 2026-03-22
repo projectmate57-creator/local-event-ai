@@ -33,6 +33,7 @@ export default function EventDetailPage() {
   const dateInfoRef = useRef<HTMLDivElement>(null);
   const { isVerified, verify } = useAgeVerification();
   const [showAgeGate, setShowAgeGate] = useState(false);
+  const [posterOpen, setPosterOpen] = useState(false);
 
   const { data: event, isLoading, error } = useQuery({
     queryKey: ["event", slug],

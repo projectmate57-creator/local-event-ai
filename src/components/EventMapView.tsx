@@ -1,12 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
-// react-leaflet v4 for React 18 compatibility
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { PublicEvent } from "@/lib/types";
-import { MapPin, Calendar, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { MapPin } from "lucide-react";
 
 // Fix default marker icon issue with webpack/vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -16,12 +12,25 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-// Custom marker icon using primary color
+const DEFAULT_CENTER: [number, number] = [51.1657, 10.4515];
+const TILE_LAYER_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const TILE_LAYER_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 const createCustomIcon = () =>
   new L.DivIcon({
     className: "custom-map-marker",
     html: `<div style="
-      width: 28px; height: 28px;
+      width: 28px;
+      height: 28px;
       background: hsl(var(--primary));
       border: 3px solid hsl(var(--background));
       border-radius: 50% 50% 50% 0;
@@ -33,34 +42,98 @@ const createCustomIcon = () =>
     popupAnchor: [0, -28],
   });
 
-function FitBounds({ events }: { events: PublicEvent[] }) {
-  const map = useMap();
+const buildPopupHtml = (event: PublicEvent) => {
+  const title = escapeHtml(event.title ?? "Untitled event");
+  const venue = event.venue ? escapeHtml(event.venue) : null;
+  const href = `/events/${event.slug || event.id}`;
+  const formattedDate = event.start_at
+    ? format(new Date(event.start_at), "MMM d, yyyy · h:mm a")
+    : "TBD";
 
-  useEffect(() => {
-    const coords = events
-      .filter((e) => e.latitude != null && e.longitude != null)
-      .map((e) => [e.latitude!, e.longitude!] as [number, number]);
-
-    if (coords.length > 0) {
-      const bounds = L.latLngBounds(coords);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-    }
-  }, [events, map]);
-
-  return null;
-}
+  return `
+    <div style="min-width: 200px; padding: 4px 2px; color: hsl(var(--foreground));">
+      <h3 style="margin: 0 0 8px; font-size: 14px; font-weight: 700; line-height: 1.3;">${title}</h3>
+      <p style="margin: 0 0 6px; font-size: 12px; color: hsl(var(--muted-foreground));">${escapeHtml(formattedDate)}</p>
+      ${venue ? `<p style="margin: 0 0 10px; font-size: 12px; color: hsl(var(--muted-foreground));">${venue}</p>` : ""}
+      <a href="${href}" style="font-size: 12px; font-weight: 600; color: hsl(var(--primary)); text-decoration: none;">View Details →</a>
+    </div>
+  `;
+};
 
 interface EventMapViewProps {
   events: PublicEvent[];
 }
 
 export function EventMapView({ events }: EventMapViewProps) {
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markersLayerRef = useRef<L.LayerGroup | null>(null);
+
   const mappableEvents = useMemo(
-    () => events.filter((e) => e.latitude != null && e.longitude != null),
+    () => events.filter((event) => event.latitude != null && event.longitude != null),
     [events]
   );
 
   const customIcon = useMemo(() => createCustomIcon(), []);
+
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const map = L.map(mapContainerRef.current, {
+      center: DEFAULT_CENTER,
+      zoom: 5,
+      zoomControl: true,
+    });
+
+    L.tileLayer(TILE_LAYER_URL, {
+      attribution: TILE_LAYER_ATTRIBUTION,
+    }).addTo(map);
+
+    const markersLayer = L.layerGroup().addTo(map);
+
+    mapRef.current = map;
+    markersLayerRef.current = markersLayer;
+
+    requestAnimationFrame(() => {
+      map.invalidateSize();
+    });
+
+    return () => {
+      markersLayer.clearLayers();
+      map.remove();
+      markersLayerRef.current = null;
+      mapRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const markersLayer = markersLayerRef.current;
+
+    if (!map || !markersLayer) return;
+
+    markersLayer.clearLayers();
+
+    if (mappableEvents.length === 0) {
+      map.setView(DEFAULT_CENTER, 5);
+      return;
+    }
+
+    const bounds = L.latLngBounds(
+      mappableEvents.map((event) => [event.latitude!, event.longitude!] as [number, number])
+    );
+
+    mappableEvents.forEach((event) => {
+      L.marker([event.latitude!, event.longitude!], { icon: customIcon })
+        .bindPopup(buildPopupHtml(event))
+        .addTo(markersLayer);
+    });
+
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+    requestAnimationFrame(() => {
+      map.invalidateSize();
+    });
+  }, [customIcon, mappableEvents]);
 
   if (mappableEvents.length === 0) {
     return (
@@ -76,52 +149,9 @@ export function EventMapView({ events }: EventMapViewProps) {
     );
   }
 
-  // Default center: Europe
-  const defaultCenter: [number, number] = [51.1657, 10.4515];
-
   return (
     <div className="overflow-hidden rounded-xl border border-border">
-      <MapContainer
-        center={defaultCenter}
-        zoom={5}
-        style={{ height: "600px", width: "100%" }}
-        className="z-0"
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <FitBounds events={mappableEvents} />
-        {mappableEvents.map((event) => (
-          <Marker
-            key={event.id}
-            position={[event.latitude!, event.longitude!]}
-            icon={customIcon}
-          >
-            <Popup>
-              <div className="min-w-[200px] space-y-2 p-1">
-                <h3 className="text-sm font-bold leading-tight">{event.title}</h3>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  {event.start_at ? format(new Date(event.start_at), "MMM d, yyyy · h:mm a") : "TBD"}
-                </div>
-                {event.venue && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" />
-                    {event.venue}
-                  </div>
-                )}
-                <Link
-                  to={`/events/${event.slug || event.id}`}
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                >
-                  View Details <ExternalLink className="h-3 w-3" />
-                </Link>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+      <div ref={mapContainerRef} className="z-0 h-[600px] w-full" aria-label="Event map" />
     </div>
   );
 }
